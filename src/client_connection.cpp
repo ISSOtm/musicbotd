@@ -5,7 +5,8 @@
 
 
 ClientConnection::ClientConnection(int socket, Server & server, Server::ConnectionID id)
- : _socket(socket), _server(server), _id(id), _running(true), _stopping(false), _thread([&](){run();}) {
+ : _socket(socket), _server(server), _id(id), _running(true), _stopping(false),
+   _thread([&](){run();}) {
     _thread.detach();
 }
 

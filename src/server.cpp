@@ -16,7 +16,8 @@
 #include "server.hpp"
 
 
-std::array<int, 2> const Server::handledSignals = {SIGINT, SIGTERM}; // The signals we stop the server on
+// The signals we stop the server on
+std::array<int, 2> const Server::handledSignals = {SIGINT, SIGTERM};
 
 
 static int const queue_length = 32;
@@ -182,7 +183,7 @@ void Server::handleNewConnection(int socket) {
         case sizeof(struct in6_addr):
             {
                 unsigned char * addrv6 = ((struct in6_addr *)&addr)->s6_addr;
-                spdlog::get("logger")->info("Accepted connection from address {}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}", addrv6[0], addrv6[1], addrv6[2], addrv6[3], addrv6[4], addrv6[5], addrv6[6], addrv6[7], addrv6[8], addrv6[9], addrv6[10], addrv6[11], addrv6[12], addrv6[13], addrv6[14], addrv6[15], addrv6[16], addrv6[17], addrv6[18], addrv6[19], addrv6[20], addrv6[21], addrv6[22], addrv6[23], addrv6[24], addrv6[25], addrv6[26], addrv6[27], addrv6[28], addrv6[29], addrv6[30], addrv6[31]);
+                spdlog::get("logger")->info("Accepted connection from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}", addrv6[0], addrv6[1], addrv6[2], addrv6[3], addrv6[4], addrv6[5], addrv6[6], addrv6[7], addrv6[8], addrv6[9], addrv6[10], addrv6[11], addrv6[12], addrv6[13], addrv6[14], addrv6[15], addrv6[16], addrv6[17], addrv6[18], addrv6[19], addrv6[20], addrv6[21], addrv6[22], addrv6[23], addrv6[24], addrv6[25], addrv6[26], addrv6[27], addrv6[28], addrv6[29], addrv6[30], addrv6[31]);
             }
             break;
 
