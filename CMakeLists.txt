@@ -1,12 +1,22 @@
 cmake_minimum_required(VERSION 3.0)
 project(musicbotd)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # MPV does not provide a CMake package
 # find_package(mpv REQUIRED)
 find_package(spdlog REQUIRED)
 
+set(FLAGS_ANY     "-Wall -Wextra -D_GNU_SOURCE")
+set(FLAGS_DEBUG   "-g -Og -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE")
+set(FLAGS_RELEASE "-O2 -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_FLAGS "-std=c++17 -D_GNU_SOURCE -Wall -Wextra ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${FLAGS_ANY}")
+set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${FLAGS_ANY} ${FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${FLAGS_ANY} ${FLAGS_RELEASE}")
 
 # Musicbot server executable
 file(GLOB_RECURSE source_files src/*.cpp)
