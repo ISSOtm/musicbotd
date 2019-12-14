@@ -1,5 +1,4 @@
 
-#include <csignal>
 #include <memory>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -8,7 +7,6 @@
 #include "server.hpp"
 
 
-std::unique_ptr<Server> server; // The server instance
 
 int main() {
     // First thing: init logging
@@ -22,19 +20,16 @@ int main() {
     spdlog::register_logger(std::make_shared<spdlog::logger, std::string, spdlog::sinks_init_list>("logger", {console_sink, file_sink}));
     spdlog::set_pattern("[%Y-%m-%dT%T.%e] [%^%l%$] %v");
 
-    // Now, create the server...
-    server = std::make_unique<Server>("1939");
+    try {
+        // Now, create the server, and run it!
+        Server("1939").run();
 
-    spdlog::get("logger")->info("Installing signal handlers...");
-
-    struct sigaction action = {};
-    action.sa_handler = [](int){ server->stop(); };
-    for (int signal : Server::handledSignals) {
-        sigaction(signal, &action, NULL);
+        return 0;
+    } catch (std::exception const & exception) {
+        spdlog::get("logger")->critical("Exception at top level: {}", exception.what());
+    } catch (...) {
+        spdlog::get("logger")->critical("Unknown exception at top level, aborting");
     }
 
-    // ...and run it!
-    server->run();
-
-    return 0;
+    return 1;
 }

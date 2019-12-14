@@ -17,7 +17,10 @@
 
 
 // The signals we stop the server on
-std::array<int, 2> const Server::handledSignals = {SIGINT, SIGTERM};
+static std::array const handledSignals = {SIGINT, SIGTERM};
+static std::array<struct sigaction, handledSignals.size()> oldact;
+
+static Server * serverInstance = nullptr;
 
 
 static int const queue_length = 32;
@@ -54,6 +57,22 @@ static void tryConnectSocket(int & socket_fd, char const * port, struct addrinfo
 
 Server::Server(char const * const port)
  : _socket4_fd(-1), _socket6_fd(-1), _running(true), _nextConnectionID(0) {
+    if (serverInstance) {
+        // Running two server instances in the same process doesn't sound reasonable, so nothing
+        // is designed to handle it.
+        spdlog::get("logger")->critical("Running two server instances in the same process will misbehave!!");
+    } else {
+        // Register this server instance
+        spdlog::get("logger")->info("Registering signal handlers...");
+
+        struct sigaction action;
+        action.sa_handler = [](int){ serverInstance->stop(); };
+        for (unsigned i = 0; i < handledSignals.size(); i++) {
+            sigaction(handledSignals[i], &action, &oldact[i]);
+        }
+
+        serverInstance = this;
+    }
 
     spdlog::get("logger")->info("Setting up connection on port {}...", port);
 
@@ -70,13 +89,23 @@ Server::Server(char const * const port)
 
     // Now check if we have at *least* one socket open; otherwise, nothing we can do
     if (_socket4_fd == -1 && _socket6_fd == -1) {
-        spdlog::get("logger")->critical("Could not open IPv4 or IPv6 socket");
         throw std::runtime_error("Could not open IPv4 or IPv6 socket");
     }
 }
 
 Server::~Server() {
+    if (serverInstance == this) {
+        spdlog::get("logger")->info("Deregistering signal handlers...");
+
+        for (unsigned i = 0; i < handledSignals.size(); i++) {
+            sigaction(handledSignals[i], &oldact[i], NULL);
+        }
+
+        serverInstance = nullptr;
+    }
+
     // Close the listening sockets
+    spdlog::get("logger")->info("Closing listening sockets...");
     if (_socket4_fd != -1) close(_socket4_fd);
     if (_socket6_fd != -1) close(_socket6_fd);
 }
@@ -172,23 +201,15 @@ void Server::handleNewConnection(int socket) {
         spdlog::get("logger")->error("accept() error: {}", strerror(errno));
         return;
     }
-    switch(addr_size) {
-        case sizeof(struct in_addr):
-            {
-                uint32_t addrv4 = ((struct in_addr *)&addr)->s_addr;
-                spdlog::get("logger")->info("Accepted connection from address {}.{}.{}.{}", addrv4 >> 24, addrv4 >> 16 & 255, addrv4 >> 8 & 255, addrv4 & 255);
-            }
-            break;
 
-        case sizeof(struct in6_addr):
-            {
-                unsigned char * addrv6 = ((struct in6_addr *)&addr)->s6_addr;
-                spdlog::get("logger")->info("Accepted connection from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}", addrv6[0], addrv6[1], addrv6[2], addrv6[3], addrv6[4], addrv6[5], addrv6[6], addrv6[7], addrv6[8], addrv6[9], addrv6[10], addrv6[11], addrv6[12], addrv6[13], addrv6[14], addrv6[15], addrv6[16], addrv6[17], addrv6[18], addrv6[19], addrv6[20], addrv6[21], addrv6[22], addrv6[23], addrv6[24], addrv6[25], addrv6[26], addrv6[27], addrv6[28], addrv6[29], addrv6[30], addrv6[31]);
-            }
-            break;
-
-        default:
-            spdlog::get("logger")->warn("Accepted connection with unknown sockaddr size {}", addr_size);
+    if (socket == _socket4_fd) {
+        uint32_t addrv4 = ((struct in_addr *)&addr)->s_addr;
+        spdlog::get("logger")->info("Accepted connection from address {}.{}.{}.{}", addrv4 >> 24, addrv4 >> 16 & 255, addrv4 >> 8 & 255, addrv4 & 255);
+    } else if (socket == _socket6_fd) {
+        unsigned char * addrv6 = ((struct in6_addr *)&addr)->s6_addr;
+        spdlog::get("logger")->info("Accepted connection from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}", addrv6[0], addrv6[1], addrv6[2], addrv6[3], addrv6[4], addrv6[5], addrv6[6], addrv6[7], addrv6[8], addrv6[9], addrv6[10], addrv6[11], addrv6[12], addrv6[13], addrv6[14], addrv6[15], addrv6[16], addrv6[17], addrv6[18], addrv6[19], addrv6[20], addrv6[21], addrv6[22], addrv6[23], addrv6[24], addrv6[25], addrv6[26], addrv6[27], addrv6[28], addrv6[29], addrv6[30], addrv6[31]);
+    } else {
+        spdlog::get("logger")->warn("Accepted connection from unknown socket {} (IPv4 {}, IPv6 {})", socket, _socket4_fd, _socket6_fd);
     }
 
     _connections.emplace(_connections.begin(), socket, *this, _nextConnectionID);

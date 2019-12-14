@@ -14,8 +14,6 @@ public:
     //        due to overflow; however, this is not a context in which it's important
     using ConnectionID = unsigned long long;
 
-    static std::array<int, 2> const handledSignals;
-
 
 private:
     int _socket4_fd; // File descriptor for the IPv4 socket
