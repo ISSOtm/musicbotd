@@ -67,6 +67,8 @@ Server::Server(char const * const port)
 
         struct sigaction action;
         action.sa_handler = [](int){ serverInstance->stop(); };
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = 0;
         for (unsigned i = 0; i < handledSignals.size(); i++) {
             sigaction(handledSignals[i], &action, &oldact[i]);
         }
