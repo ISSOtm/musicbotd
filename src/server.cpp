@@ -122,7 +122,7 @@ void Server::run() {
         (struct pollfd){}, // The last two are to be filled for the IP sockets
         (struct pollfd){}
     };
-    nfds_t nfds = sizeof(pollfds) / sizeof(pollfds[0]) - 2;
+    nfds_t nfds = pollfds.size() - 2;
     // To avoid a race condition, signals being caught need to be blocked during polling
     sigset_t blockedSignals;
     sigemptyset(&blockedSignals);
