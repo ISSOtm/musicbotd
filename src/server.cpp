@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 #include "client_connection.hpp"
+#include "config_manager.hpp"
 #include "server.hpp"
 
 
@@ -24,11 +25,11 @@ static Server * serverInstance = nullptr;
 
 
 static int const queue_length = 32;
-static void tryConnectSocket(int & socket_fd, char const * port, struct addrinfo const * hints,
+static void tryConnectSocket(int & socket_fd, std::string const & port, struct addrinfo const * hints,
                              char const * protocol) {
     struct addrinfo * result;
 
-    int gai_errno = getaddrinfo(NULL, port, hints, &result);
+    int gai_errno = getaddrinfo(NULL, port.c_str(), hints, &result);
     if (gai_errno) {
         spdlog::get("logger")->warn("Failure to init {} socket: {}", protocol,
                                     gai_strerror(gai_errno));
@@ -55,7 +56,7 @@ static void tryConnectSocket(int & socket_fd, char const * port, struct addrinfo
     }
 }
 
-Server::Server(char const * const port)
+Server::Server(ConfigManager & config)
  : _socket4_fd(-1), _socket6_fd(-1), _running(true), _nextConnectionID(0) {
     if (serverInstance) {
         // Running two server instances in the same process doesn't sound reasonable, so nothing
@@ -76,6 +77,7 @@ Server::Server(char const * const port)
         serverInstance = this;
     }
 
+    std::string port = std::to_string(config.getInt("port"));
     spdlog::get("logger")->info("Setting up connection on port {}...", port);
 
     // Try making an IPv4 socket

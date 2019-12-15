@@ -7,6 +7,7 @@
 
 
 class ClientConnection;
+class ConfigManager;
 
 class Server {
 public:
@@ -27,7 +28,7 @@ private:
     std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
 
 public:
-    Server(char const * const port);
+    Server(ConfigManager & config);
     ~Server();
 
     void run(); // Loops infinitely until stopped, handling incoming connections
