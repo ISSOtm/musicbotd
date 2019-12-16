@@ -4,6 +4,7 @@
 
 #include <exception>
 #include <fstream>
+#include <locale>
 #include <map>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
@@ -48,12 +49,14 @@ public:
 
 class ConfigManager {
 private:
-    static char const * const separators;
-    static char const * const whitespace;
+    static std::map<int, void (ConfigManager::*)(std::ifstream &, std::locale const &)> _parsers;
+
 private:
     std::string _path;
 
     std::map<std::string, std::unique_ptr<Property>> _properties;
+
+    void parse_v1(std::ifstream & configFile, std::locale const & locale);
 
 public:
     template<typename... T>
@@ -82,42 +85,35 @@ ConfigManager::ConfigManager(T const & ... paths) {
             goto found; // C++ does not have `for {} else {}`, sadly...
         }
 
-        spdlog::get("logger")->warn("Failed to open ini file {}", path);
+        spdlog::get("logger")->warn("Failed to open ini file {}, falling back...", path);
     }
     throw std::runtime_error("Failed to open any ini file");
 
 found:
+    // We want a unique locale for parsing option files, nothing system-dependent
+    std::locale const & locale = std::locale::classic();
+    configFile.imbue(locale);
+
     // Read the config from the file
-    unsigned lineNo = 0;
-    std::array<char, 4096> lineArray;
-    while (!configFile.eof()) {
-        configFile.getline(lineArray.data(), lineArray.size());
-        ++lineNo;
 
-        if (configFile.fail() && !configFile.eof()) {
-            throw std::runtime_error(_path + " line " + std::to_string(lineNo) + " is too large (" + std::to_string(lineArray.size() - 1) + " chars max)");
-        }
+    // First, expect a version line
+    unsigned version;
+    if ([&configFile, &version]() {
+        if (configFile.get() != '#') return true;
+        std::string s;
+        configFile >> s;
+        if (s != "version") return true;
+        configFile >> version;
+        return configFile.fail();
+    }()) {
+        throw std::runtime_error(_path + ": Expected a version line on line 1");
+    }
 
-        // Extract the property name and value (ignoring whitespace)
-        std::string_view line = lineArray.data();
-        // Skip leading whitespace
-        auto initialSkip = line.find_first_not_of(ConfigManager::whitespace);
-        if (initialSkip == std::string_view::npos) continue; // Skip empty lines
-        line.remove_prefix(initialSkip);
-        if (line.front() == ';') continue; // Skip comment lines
-        // A value too large will yield a view to the end of the string, which is fine
-        // It will cause the `=` to fail to be found
-        auto propNameLen = line.find_first_of(ConfigManager::separators);
-        std::string_view propName = line.substr(0, propNameLen);
-        line.remove_prefix(propNameLen); // Skip property name
-
-        auto middleSkip = line.find_first_not_of(ConfigManager::separators);
-        if (middleSkip == std::string_view::npos) throw std::runtime_error(_path + " line " + std::to_string(lineNo) + " only contains a property name, but no value");
-        line.remove_prefix(middleSkip);
-        // Make sure to trim the value
-        std::string_view property = line.substr(0, line.find_last_not_of(ConfigManager::whitespace) + 1);
-
-        _properties.at(std::string(propName.begin(), propName.end()))->set(std::string(property.begin(), property.end()));
+    // Now, parse config lines
+    try {
+        (this->*_parsers.at(version))(configFile, locale);
+    } catch (std::out_of_range const &) {
+        throw std::out_of_range(_path + ": Unsupported version " + std::to_string(version));
     }
 }
 

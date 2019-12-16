@@ -20,7 +20,7 @@ int main() {
     spdlog::register_logger(std::make_shared<spdlog::logger, std::string, spdlog::sink_ptr>("logger", console_sink));
 
     // Second thing: read config
-    ConfigManager config("/etc/musicbotd.ini", "./musicbotd.ini");
+    ConfigManager config("/etc/musicbotd.ini", "musicbotd.ini");
 
     // Now we can start logging to a file
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.getStr("log_file"));
