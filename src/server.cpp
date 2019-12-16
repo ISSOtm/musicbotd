@@ -34,11 +34,17 @@ static void tryConnectSocket(int & socket_fd, std::string const & port, struct a
         spdlog::get("logger")->warn("Failure to init {} socket: {}", protocol,
                                     gai_strerror(gai_errno));
     } else {
+        unsigned nbAttempts = 0;
         // We now have a list of possible addrinfo structs, try `bind`ing until one succeeds
         for (struct addrinfo * ptr = result; ptr; ptr = ptr->ai_next) {
+            nbAttempts++;
             socket_fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
             // A failure is not a problem
-            if (socket_fd == -1) continue;
+            if (socket_fd == -1) {
+                spdlog::get("logger")->debug("Attempt to create {} socket failed, trying next: {}",
+                                             protocol, strerror(errno));
+                continue;
+            }
             // However, a success is a definitive success!
             if (bind(socket_fd, ptr->ai_addr, ptr->ai_addrlen) == 0
              && listen(socket_fd, queue_length) == 0) break;
@@ -50,8 +56,8 @@ static void tryConnectSocket(int & socket_fd, std::string const & port, struct a
         freeaddrinfo(result);
 
         if (socket_fd == -1) {
-            spdlog::get("logger")->warn("Failure to init {} socket : exhausted all options",
-                                        protocol);
+            spdlog::get("logger")->warn("Failure to init {} socket : exhausted all {} options",
+                                        protocol, nbAttempts);
         }
     }
 }
