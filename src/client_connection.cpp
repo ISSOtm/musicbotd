@@ -41,4 +41,6 @@ void ClientConnection::run() {
         // TODO
     }
     _running = false;
+
+    _server.addWishToDie(_id);
 }
