@@ -148,15 +148,25 @@ void Server::run() {
     while (_running) {
         switch (ppoll(pollfds.data(), nfds, &timeout, &blockedSignals)) {
             case -1:
-                spdlog::get("logger")->error("run() ppoll() error: {}", strerror(errno));
+                spdlog::get("logger")->error("server.run() ppoll() error: {}", strerror(errno));
                 // fallthrough
 
             case 0: // Nothing to do
                 break;
 
             default:
+                // Check for any errors in file descriptors
+                // I'm not sure how to handle them, but report them in the off chance it happens
                 for (nfds_t i = 0; i < nfds; i++) {
-                    handleNewConnection(pollfds[i].fd);
+                    if (pollfds[i].revents & POLLERR) {
+                        spdlog::get("logger")->error("server.run(): file descr. {} [pollfd index {}] returned error", pollfds[i].fd, i);
+                    }
+                }
+                // Check the listener sockets
+                for (nfds_t i = pollfds.size() - 2; i < nfds; i++) {
+                    if (pollfds[i].revents & POLLIN) {
+                        handleNewConnection(pollfds[i].fd);
+                    }
                 }
         }
 
