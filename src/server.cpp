@@ -70,7 +70,7 @@ Server::Server(ConfigManager & config)
         spdlog::get("logger")->critical("Running two server instances in the same process will misbehave!!");
     } else {
         // Register this server instance
-        spdlog::get("logger")->info("Registering signal handlers...");
+        spdlog::get("logger")->trace("Registering signal handlers...");
 
         struct sigaction action;
         action.sa_handler = [](int){ serverInstance->stop(); };
@@ -84,7 +84,7 @@ Server::Server(ConfigManager & config)
     }
 
     std::string port = std::to_string(config.getInt("port"));
-    spdlog::get("logger")->info("Setting up connection on port {}...", port);
+    spdlog::get("logger")->trace("Setting up connection on port {}...", port);
 
     // Try making an IPv4 socket
     struct addrinfo hints = {};
@@ -105,7 +105,7 @@ Server::Server(ConfigManager & config)
 
 Server::~Server() {
     if (serverInstance == this) {
-        spdlog::get("logger")->info("Deregistering signal handlers...");
+        spdlog::get("logger")->trace("Deregistering signal handlers...");
 
         for (unsigned i = 0; i < handledSignals.size(); i++) {
             sigaction(handledSignals[i], &oldact[i], NULL);
@@ -115,14 +115,16 @@ Server::~Server() {
     }
 
     // Close the listening sockets
-    spdlog::get("logger")->info("Closing listening sockets...");
+    spdlog::get("logger")->trace("Closing listening sockets...");
     if (_socket4_fd != -1) close(_socket4_fd);
     if (_socket6_fd != -1) close(_socket6_fd);
+
+    spdlog::get("logger")->trace("~Server() done.");
 }
 
 
 void Server::run() {
-    spdlog::get("logger")->info("Setting up polling for sockets...");
+    spdlog::get("logger")->trace("Setting up polling for sockets...");
 
     // The arguments to `ppoll`...
     struct timespec const timeout = { .tv_sec = 0, .tv_nsec = 1000 };
@@ -193,13 +195,7 @@ void Server::run() {
         connection.stop();
     }
 
-    while (!_connections.empty()) {
-        _connections.remove_if([](ClientConnection const & connection) {
-            return !connection.running();
-        });
-    }
-
-    spdlog::get("logger")->info("Done.");
+    spdlog::get("logger")->trace("server.run() done.");
 }
 
 void Server::stop() {

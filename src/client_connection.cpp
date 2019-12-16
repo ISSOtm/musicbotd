@@ -1,17 +1,25 @@
 
 #include <unistd.h>
 
+#include <spdlog/spdlog.h>
+
 #include "client_connection.hpp"
 
 
 ClientConnection::ClientConnection(int socket, Server & server, Server::ConnectionID id)
  : _socket(socket), _server(server), _id(id), _running(true), _stopping(false),
    _thread([&](){run();}) {
-    _thread.detach();
 }
 
 ClientConnection::~ClientConnection() {
+    spdlog::get("logger")->trace("Stopping connection {}...", _id);
+
+    stop();
+    _thread.join();
+
     close(_socket);
+
+    spdlog::get("logger")->trace("~ClientConnection({}) done.", _id);
 }
 
 

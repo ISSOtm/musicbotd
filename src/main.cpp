@@ -14,11 +14,11 @@ int main() {
     // First thing: init logging
     // Logging to a file will not be done yet, since we need to read config for that
     auto console_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    console_sink->set_level(spdlog::level::warn);
+    console_sink->set_level(spdlog::level::trace);
     console_sink->set_pattern(log_format);
     // Create a logger object and register it into spdlog's global logger pool
     spdlog::register_logger(std::make_shared<spdlog::logger, std::string, spdlog::sink_ptr>("logger", console_sink));
-    spdlog::get("logger")->set_level(spdlog::level::trace);
+    spdlog::get("logger")->set_level(spdlog::level::info);
 
     // Second thing: read config
     ConfigManager config("/etc/musicbotd.ini", "musicbotd.ini");
