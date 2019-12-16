@@ -210,22 +210,24 @@ void Server::addWishToDie(ConnectionID id) {
 
 
 void Server::handleNewConnection(int socket) {
-    struct sockaddr addr;
+    struct sockaddr_storage addr;
     socklen_t addr_size = sizeof(addr);
-    int new_socket = accept(socket, &addr, &addr_size);
+    int new_socket = accept(socket, reinterpret_cast<struct sockaddr *>(&addr), &addr_size);
     if (new_socket == -1) {
         spdlog::get("logger")->error("accept() error: {}", strerror(errno));
         return;
     }
 
-    if (socket == _socket4_fd) {
-        uint32_t addrv4 = ((struct in_addr *)&addr)->s_addr;
-        spdlog::get("logger")->info("Accepted connection from address {}.{}.{}.{}", addrv4 >> 24, addrv4 >> 16 & 255, addrv4 >> 8 & 255, addrv4 & 255);
-    } else if (socket == _socket6_fd) {
-        unsigned char * addrv6 = ((struct in6_addr *)&addr)->s6_addr;
-        spdlog::get("logger")->info("Accepted connection from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}", addrv6[0], addrv6[1], addrv6[2], addrv6[3], addrv6[4], addrv6[5], addrv6[6], addrv6[7], addrv6[8], addrv6[9], addrv6[10], addrv6[11], addrv6[12], addrv6[13], addrv6[14], addrv6[15], addrv6[16], addrv6[17], addrv6[18], addrv6[19], addrv6[20], addrv6[21], addrv6[22], addrv6[23], addrv6[24], addrv6[25], addrv6[26], addrv6[27], addrv6[28], addrv6[29], addrv6[30], addrv6[31]);
+    if (addr.ss_family == AF_INET) {
+        struct sockaddr_in const * addrv4 = reinterpret_cast<struct sockaddr_in *>(&addr);
+        uint32_t ip4 = ntohl(addrv4->sin_addr.s_addr);
+        spdlog::get("logger")->info("Accepted connection {} from address {}.{}.{}.{}:{}", _nextConnectionID, ip4 >> 24, ip4 >> 16 & 255, ip4 >> 8 & 255, ip4 & 255, ntohs(addrv4->sin_port));
+    } else if (addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 const * addrv6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
+        unsigned char const * ip6 = addrv6->sin6_addr.s6_addr;
+        spdlog::get("logger")->info("Accepted connection {} from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x} port {}", _nextConnectionID, ip6[0], ip6[1], ip6[2], ip6[3], ip6[4], ip6[5], ip6[6], ip6[7], ip6[8], ip6[9], ip6[10], ip6[11], ip6[12], ip6[13], ip6[14], ip6[15], ip6[16], ip6[17], ip6[18], ip6[19], ip6[20], ip6[21], ip6[22], ip6[23], ip6[24], ip6[25], ip6[26], ip6[27], ip6[28], ip6[29], ip6[30], ip6[31], ntohs(addrv6->sin6_port));
     } else {
-        spdlog::get("logger")->warn("Accepted connection from unknown socket {} (IPv4 {}, IPv6 {})", socket, _socket4_fd, _socket6_fd);
+        spdlog::get("logger")->warn("Accepted connection {} of unknown type {}", _nextConnectionID, addr.ss_family);
     }
 
     _connections.emplace(_connections.begin(), socket, *this, _nextConnectionID);
