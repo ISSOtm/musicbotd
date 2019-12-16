@@ -9,6 +9,10 @@
 
 
 
+// ***WARNING***
+// If `%t` is used while `SPDLOG_NO_THREAD_ID` is defined, behavior is undefined
+// If `%n` is used while `SPDLOG_NO_NAME` is defined, behavior is undefined
+// Remove variables from compilation flags to use those again
 static char const * const log_format = "[%Y-%m-%dT%T.%e] [%^%l%$] %v";
 int main() {
     // First thing: init logging
