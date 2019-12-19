@@ -19,6 +19,7 @@ int main() {
     // Create a logger object and register it into spdlog's global logger pool
     spdlog::stderr_color_mt("logger"); // Log to stderr because systemd will handle everything
     spdlog::get("logger")->set_level(spdlog::level::trace);
+    spdlog::get("logger")->set_pattern(log_format);
 
     // Second thing: read config
     ConfigManager config("/etc/musicbotd.ini", "musicbotd.ini");
