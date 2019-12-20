@@ -230,7 +230,7 @@ void Server::handleNewConnection(int socket) {
         spdlog::get("logger")->warn("Accepted connection {} of unknown type {}", _nextConnectionID, addr.ss_family);
     }
 
-    _connections.emplace(_connections.begin(), socket, *this, _nextConnectionID);
+    _connections.emplace(_connections.begin(), new_socket, *this, _nextConnectionID);
     ++_nextConnectionID;
 }
 
