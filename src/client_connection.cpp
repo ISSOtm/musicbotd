@@ -8,6 +8,7 @@
 #include <array>
 #include <set>
 #include <spdlog/spdlog.h>
+#include <sstream>
 #include <stdexcept>
 
 #include "client_connection.hpp"
