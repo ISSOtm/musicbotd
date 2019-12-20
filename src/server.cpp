@@ -127,7 +127,7 @@ void Server::run() {
     spdlog::get("logger")->trace("Setting up polling for sockets...");
 
     // The arguments to `ppoll`...
-    struct timespec const timeout = { .tv_sec = 0, .tv_nsec = 1000 };
+    struct timespec const timeout = { .tv_sec = 0, .tv_nsec = 100000 };
     std::array pollfds = {
         (struct pollfd){}, // The last two are to be filled for the IP sockets
         (struct pollfd){}

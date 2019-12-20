@@ -22,10 +22,10 @@ private:
 
     bool _running; // Set to false when the server recieves SIGTERM
 
-    ConnectionID _nextConnectionID; // The ID of the next connection to be generated
-    std::list<ClientConnection> _connections;
     std::mutex _closingReqMutex; // Mutex for modifying what's below
     std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
+    ConnectionID _nextConnectionID; // The ID of the next connection to be generated
+    std::list<ClientConnection> _connections;
 
 public:
     Server(ConfigManager & config);

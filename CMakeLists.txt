@@ -6,6 +6,7 @@ set(CMAKE_BUILD_TYPE Debug)
 # MPV does not provide a CMake package
 # find_package(mpv REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(FLAGS_ANY     "-Wall -Wextra -D_GNU_SOURCE -DSPDLOG_NO_THREAD_ID -DSPDLOG_NO_NAME")
 set(FLAGS_DEBUG   "-g -O0 -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE")
@@ -22,6 +23,5 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${FLAGS_ANY} ${FLAGS_REL
 file(GLOB_RECURSE source_files src/*.cpp)
 add_executable(${PROJECT_NAME} ${source_files})
 target_link_libraries(${PROJECT_NAME}
-    pthread
-    mpv
+    PRIVATE pthread mpv nlohmann_json::nlohmann_json
 )
