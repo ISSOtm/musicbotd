@@ -55,7 +55,7 @@ void ConfigManager::parse_v1(std::ifstream & configFile, std::locale const & loc
         try {
             _properties.at(std::string(rawPropName.data()))->set(value);
         } catch (std::out_of_range const &) {
-            throw std::out_of_range(_path + ": Unknown property '" + std::string(rawPropName.data()) + "'");
+            throw std::runtime_error(_path + ": Unknown property '" + std::string(rawPropName.data()) + "'");
         }
     }
 }
