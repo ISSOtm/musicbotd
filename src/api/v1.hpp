@@ -16,6 +16,7 @@ public:
         PL_SUB,      // (Un)subscription
         MUS_LIST,    // Playlist contents request
         MUS_ADD,     // Music addition (in playlist, possibly in queue as well)
+        MUS_IMPORT,  // Playlist import (basically a repeated `MUS_ADD`)
         MUS_REORDER, // Music queue reordering
         MUS_DEL,     // Music removal from playlist
         MUS_SKIP,    // Music removal from queue
@@ -32,13 +33,12 @@ public:
         MUS_LIST     // Playlist contents
     };
 
-private:
-    enum {
+    enum State : unsigned {
         NONE,
         AUTH,
         PL_SEL,
         PL_DEL
-    } _type; // Conversation type
+    };
 
 public:
     v1Conversation();

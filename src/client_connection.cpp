@@ -13,10 +13,15 @@
 #include "client_connection.hpp"
 
 
+using namespace std::literals::chrono_literals;
+std::chrono::steady_clock::duration const ClientConnection::timeout = 10s;
+std::chrono::steady_clock::duration const ClientConnection::Conversation::timeout = 3s;
+
+
 ClientConnection::ClientConnection(int socket, Server & server, Server::ConnectionID id)
- : _socket(socket), _server(server), _id(id), _pending(), _version(0), _destructing(false),
-   _running(true), _stopping(false),
-   _thread([&](){run();}) {}
+ : _socket(socket), _server(server), _id(id), _pending(), _version(0), _conversations(),
+   _lastActive(std::chrono::steady_clock::now()), _destructing(false), _running(true),
+   _stopping(false), _thread([&](){run();}) {}
 
 ClientConnection::~ClientConnection() {
     _destructing = true;
@@ -70,7 +75,16 @@ void ClientConnection::run() {
             while (iter != _conversations.cend()) {
                 auto cur = iter;
                 ++iter; // Get the next one now, since erasing invalidates `cur`
-                if (std::get<1>(*cur)->hasTimedOut()) _conversations.erase(cur);
+                if (std::get<1>(*cur)->hasTimedOut()) {
+                    spdlog::get("logger")->error("ClientConnection[id={}] conv {} timed out",
+                                                 _id, std::get<0>(*cur));
+                    _conversations.erase(cur);
+                }
+            }
+
+            // Terminate ourselves if we timed out
+            if (hasTimedOut()) {
+                stop();
             }
 
         } catch (std::exception const & e) {
@@ -205,21 +219,28 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
         }
 
         int id = packet["id"];
-        if (id < 0) {
-            // One-off message
-            packetHandlers.at(_version)()->handlePacket(packet);
-        } else {
-            // Check if the conversation exists
-            auto conversation = _conversations.find(id);
-            if (conversation == _conversations.end()) {
-                conversation = std::get<0>(_conversations.emplace(
-                    std::piecewise_construct,
-                    std::tuple(id), std::tuple(packetHandlers.at(_version)())
-                ));
+        try {
+            if (id < 0) {
+                // One-off message
+                packetHandlers.at(_version)()->handlePacket(packet);
+            } else {
+                // Check if the conversation exists
+                auto conversation = _conversations.find(id);
+                if (conversation == _conversations.end()) {
+                    conversation = std::get<0>(_conversations.emplace(
+                        std::piecewise_construct,
+                        std::tuple(id), std::tuple(packetHandlers.at(_version)())
+                    ));
+                }
+                if (_conversations[id]->handlePacket(packet) == Conversation::Status::FINISHED) {
+                    _conversations.erase(id);
+                }
             }
-            if (_conversations[id]->handlePacket(packet) == Conversation::Status::FINISHED) {
-                _conversations.erase(id);
-            }
+
+            _lastActive = std::chrono::steady_clock::now();
+
+        } catch (std::out_of_range const &) {
+            spdlog::get("logger")->error("ClientConnection[id={}] conv {} recieved unexpected packet type {}", _id, id, packet["type"].get<unsigned>());
         }
     }
 } catch (nlohmann::json::exception const & e) {
@@ -270,11 +291,4 @@ ClientConnection::Conversation::Status ClientConnection::Conversation::handlePac
         _lastActive = std::chrono::steady_clock::now();
     }
     return status;
-}
-
-using namespace std::literals::chrono_literals;
-std::chrono::steady_clock::duration const ClientConnection::Conversation::timeout = 10s;
-
-bool ClientConnection::Conversation::hasTimedOut() const {
-    return std::chrono::steady_clock::now() - _lastActive > timeout;
 }

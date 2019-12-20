@@ -35,15 +35,28 @@ public:
         // Returns true if the packet processed was the last one, then the object is destroyed
         Status handlePacket(nlohmann::json const & packet);
         // This behavior is identical for *all* classes
-        bool hasTimedOut() const;
+        bool hasTimedOut() const {
+            return std::chrono::steady_clock::now() - _lastActive > timeout;
+        };
     protected:
         // Utility function for children classes to call
-        template<std::size_t size, typename T>
-        Status processStateMachine(std::array<std::map<T, std::pair<Status, unsigned> (*)(nlohmann::json const &)>, size> const & transitions, T key, nlohmann::json const & packet);
+        template<std::size_t size, typename PacketType, typename State>
+        Status processStateMachine(std::array<std::map<PacketType, std::pair<Status, State> (*)(nlohmann::json const &)>, size> const & transitions, PacketType key, nlohmann::json const & packet) {
+            Status ret;
+            try {
+                std::tie(ret, _state) = transitions[_state].at(key)(packet);
+            } catch (std::out_of_range const &) {
+                throw std::out_of_range("state " + std::to_string(_state) + " got unexpected packet type " + packet["type"].dump());
+            }
+            return ret;
+        }
     private:
         // Each implementation's own packet handling
         virtual Status _handlePacket(nlohmann::json const & packet) = 0;
     };
+
+
+    static std::chrono::steady_clock::duration const timeout;
 
 
 private:
@@ -54,6 +67,7 @@ private:
     std::string _pending; // Partial messages are stored here
     unsigned _version; // The version of the API used to dialog over this connection
     std::map<int, std::unique_ptr<Conversation>> _conversations;
+    std::chrono::steady_clock::time_point _lastActive;
 
     bool _destructing; // Set to true when the object is being destructed
     bool _running; // Set to false when the thread stops
@@ -75,17 +89,10 @@ private:
     void handleConnection(struct pollfd const &);
     void handlePacket(nlohmann::json const & packet);
     void handleNegotiation(nlohmann::json const & packet);
+    bool hasTimedOut() const { return std::chrono::steady_clock::now() - _lastActive > timeout; }
 
     void sendPacket(nlohmann::json const & packet);
 };
-
-
-template<std::size_t size, typename T>
-ClientConnection::Conversation::Status ClientConnection::Conversation::processStateMachine(std::array<std::map<T, std::pair<Status, unsigned> (*)(nlohmann::json const &)>, size> const & transitions, T key, nlohmann::json const & packet) {
-    Status ret;
-    std::tie(ret, _state) = transitions[_state].at(key)(packet);
-    return ret;
-}
 
 
 // List of classes (extending `Conversation`) handling different API versions
