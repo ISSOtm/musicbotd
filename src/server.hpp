@@ -9,6 +9,8 @@
 class ClientConnection;
 class ConfigManager;
 
+struct addrinfo;
+
 class Server {
 public:
     // FIXME: Using a sequence of IDs is kinda sucky because there can be conflicts
@@ -17,8 +19,7 @@ public:
 
 
 private:
-    int _socket4_fd; // File descriptor for the IPv4 socket
-    int _socket6_fd; // File descriptor for the IPv6 socket
+    int _socket; // File descriptor for the listener socket
 
     bool _running; // Set to false when the server recieves SIGTERM
 
@@ -27,6 +28,7 @@ private:
     ConnectionID _nextConnectionID; // The ID of the next connection to be generated
     std::list<ClientConnection> _connections;
 
+    void tryConnectSocket(std::string const & port, struct addrinfo const * hints, char const * protocol);
 public:
     Server(ConfigManager & config);
     ~Server();

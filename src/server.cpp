@@ -25,8 +25,8 @@ static Server * serverInstance = nullptr;
 
 
 static int const queue_length = 32;
-static void tryConnectSocket(int & socket_fd, std::string const & port, struct addrinfo const * hints,
-                             char const * protocol) {
+void Server::tryConnectSocket(std::string const & port, struct addrinfo const * hints,
+                              char const * protocol) {
     struct addrinfo * result;
 
     int gai_errno = getaddrinfo(NULL, port.c_str(), hints, &result);
@@ -38,24 +38,31 @@ static void tryConnectSocket(int & socket_fd, std::string const & port, struct a
         // We now have a list of possible addrinfo structs, try `bind`ing until one succeeds
         for (struct addrinfo * ptr = result; ptr; ptr = ptr->ai_next) {
             nbAttempts++;
-            socket_fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+            _socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
             // A failure is not a problem
-            if (socket_fd == -1) {
+            if (_socket == -1) {
                 spdlog::get("logger")->debug("Attempt to create {} socket failed, trying next: {}",
                                              protocol, strerror(errno));
                 continue;
             }
+            // If it's an IPv6 socket, try making it dual-stack
+            if (ptr->ai_family == AF_INET6) {
+                int zero = 0;
+                if (setsockopt(_socket, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(zero)) == -1) {
+                    spdlog::get("logger")->warn("Failed to make IPv6 socket dual-stack: {}", strerror(errno));
+                }
+            }
             // However, a success is a definitive success!
-            if (bind(socket_fd, ptr->ai_addr, ptr->ai_addrlen) == 0
-             && listen(socket_fd, queue_length) == 0) break;
+            if (bind(_socket, ptr->ai_addr, ptr->ai_addrlen) == 0
+             && listen(_socket, queue_length) == 0) break;
             spdlog::get("logger")->debug("Attempt to open {} socket failed, trying next: {}",
                                          protocol, strerror(errno));
-            close(socket_fd); // Clean up the socket we opened
-            socket_fd = -1; // Revert back to failure state
+            close(_socket); // Clean up the socket we opened
+            _socket = -1; // Revert back to failure state
         }
         freeaddrinfo(result);
 
-        if (socket_fd == -1) {
+        if (_socket == -1) {
             spdlog::get("logger")->warn("Failure to init {} socket : exhausted all {} options",
                                         protocol, nbAttempts);
         }
@@ -63,7 +70,7 @@ static void tryConnectSocket(int & socket_fd, std::string const & port, struct a
 }
 
 Server::Server(ConfigManager & config)
- : _socket4_fd(-1), _socket6_fd(-1), _running(true), _nextConnectionID(0) {
+ : _socket(-1), _running(true), _nextConnectionID(0) {
     if (serverInstance) {
         // Running two server instances in the same process doesn't sound reasonable, so nothing
         // is designed to handle it.
@@ -86,19 +93,22 @@ Server::Server(ConfigManager & config)
     std::string port = std::to_string(config.getInt("port"));
     spdlog::get("logger")->trace("Setting up connection on port {}...", port);
 
-    // Try making an IPv4 socket
+    // Try making an IPv6 socket
     struct addrinfo hints = {};
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    tryConnectSocket(_socket4_fd, port, &hints, "IPv4");
+    tryConnectSocket(port, &hints, "IPv6");
 
-    // Now try again for IPv6
-    hints.ai_family = AF_INET6;
-    tryConnectSocket(_socket6_fd, port, &hints, "IPv6");
+    if (_socket == -1) {
+        // Now try again for IPv4
+        spdlog::get("logger")->warn("Couldn't set up IPv6 socket, falling back to IPv4");
+        hints.ai_family = AF_INET;
+        tryConnectSocket(port, &hints, "IPv4");
+    }
 
     // Now check if we have at *least* one socket open; otherwise, nothing we can do
-    if (_socket4_fd == -1 && _socket6_fd == -1) {
+    if (_socket == -1) {
         throw std::runtime_error("Could not open IPv4 or IPv6 socket");
     }
 }
@@ -116,8 +126,7 @@ Server::~Server() {
 
     // Close the listening sockets
     spdlog::get("logger")->trace("Closing listening sockets...");
-    if (_socket4_fd != -1) close(_socket4_fd);
-    if (_socket6_fd != -1) close(_socket6_fd);
+    if (_socket != -1) close(_socket);
 
     spdlog::get("logger")->trace("~Server() done.");
 }
@@ -129,10 +138,8 @@ void Server::run() {
     // The arguments to `ppoll`...
     struct timespec const timeout = { .tv_sec = 0, .tv_nsec = 100000 };
     std::array pollfds = {
-        (struct pollfd){}, // The last two are to be filled for the IP sockets
-        (struct pollfd){}
+        (struct pollfd){ .fd = _socket, .events = POLLIN }
     };
-    nfds_t nfds = pollfds.size() - 2;
     // To avoid a race condition, signals being caught need to be blocked during polling
     sigset_t blockedSignals;
     sigemptyset(&blockedSignals);
@@ -140,21 +147,13 @@ void Server::run() {
         sigaddset(&blockedSignals, signal);
     }
 
-    // Set up 1 or 2 `pollfd`s depending on the available sockets
-    auto setUpIPPoll = [&pollfds, &nfds](int const & socket) {
-        if (socket == -1) return;
-        pollfds[nfds].fd      = socket;
-        pollfds[nfds].events  = POLLIN;
-        ++nfds;
-    };
-    setUpIPPoll(_socket4_fd);
-    setUpIPPoll(_socket6_fd);
-
     spdlog::get("logger")->info("Up and running!");
 
 
     while (_running) {
-        switch (ppoll(pollfds.data(), nfds, &timeout, &blockedSignals)) {
+        // TODO: sometimes valgrind reports that the `sigmask` argument is incorrect?
+        // How that is even possible beats me.
+        switch (ppoll(pollfds.data(), pollfds.size(), &timeout, &blockedSignals)) {
             case -1:
                 spdlog::get("logger")->error("server.run() ppoll() error: {}", strerror(errno));
                 // fallthrough
@@ -165,16 +164,14 @@ void Server::run() {
             default:
                 // Check for any errors in file descriptors
                 // I'm not sure how to handle them, but report them in the off chance it happens
-                for (nfds_t i = 0; i < nfds; i++) {
+                for (nfds_t i = 0; i < pollfds.size(); i++) {
                     if (pollfds[i].revents & POLLERR) {
                         spdlog::get("logger")->error("server.run(): file descr. {} [pollfd index {}] returned error", pollfds[i].fd, i);
                     }
                 }
-                // Check the listener sockets
-                for (nfds_t i = pollfds.size() - 2; i < nfds; i++) {
-                    if (pollfds[i].revents & POLLIN) {
-                        handleNewConnection(pollfds[i].fd);
-                    }
+                // Check the listener socket
+                if (pollfds[0].revents & POLLIN) {
+                    handleNewConnection(_socket);
                 }
         }
 
