@@ -225,7 +225,7 @@ void Server::handleNewConnection(int socket) {
     } else if (addr.ss_family == AF_INET6) {
         struct sockaddr_in6 const * addrv6 = reinterpret_cast<struct sockaddr_in6 *>(&addr);
         unsigned char const * ip6 = addrv6->sin6_addr.s6_addr;
-        spdlog::get("logger")->info("Accepted connection {} from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x} port {}", _nextConnectionID, ip6[0], ip6[1], ip6[2], ip6[3], ip6[4], ip6[5], ip6[6], ip6[7], ip6[8], ip6[9], ip6[10], ip6[11], ip6[12], ip6[13], ip6[14], ip6[15], ip6[16], ip6[17], ip6[18], ip6[19], ip6[20], ip6[21], ip6[22], ip6[23], ip6[24], ip6[25], ip6[26], ip6[27], ip6[28], ip6[29], ip6[30], ip6[31], ntohs(addrv6->sin6_port));
+        spdlog::get("logger")->info("Accepted connection {} from address {:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x}:{:0>2x} port {}", _nextConnectionID, ip6[0], ip6[1], ip6[2], ip6[3], ip6[4], ip6[5], ip6[6], ip6[7], ip6[8], ip6[9], ip6[10], ip6[11], ip6[12], ip6[13], ip6[14], ip6[15], ntohs(addrv6->sin6_port));
     } else {
         spdlog::get("logger")->warn("Accepted connection {} of unknown type {}", _nextConnectionID, addr.ss_family);
     }
