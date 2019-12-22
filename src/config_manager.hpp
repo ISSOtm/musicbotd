@@ -72,7 +72,6 @@ ConfigManager::ConfigManager(T const & ... paths) {
     // Insert default values
     // Can't do this from std::map init because it insists on using a copy constructor
     _properties.emplace("port",     std::make_unique<IntProperty<10>>(1939));
-    _properties.emplace("log_file", std::make_unique<StringProperty> ("musicbotd.log"));
 
     // Try opening all INI files, grabbing the first matching one (the most specific)
     std::ifstream configFile;
