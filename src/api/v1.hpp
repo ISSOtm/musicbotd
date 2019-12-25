@@ -41,7 +41,7 @@ public:
     };
 
 public:
-    v1Conversation();
+    v1Conversation(ClientConnection & owner);
 
     Status _handlePacket(nlohmann::json const & packet);
 };

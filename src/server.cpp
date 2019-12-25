@@ -70,7 +70,8 @@ void Server::tryConnectSocket(std::string const & port, struct addrinfo const * 
 }
 
 Server::Server(ConfigManager & config)
- : _socket(-1), _running(true), _nextConnectionID(0) {
+ : _socket(-1), _running(true), _player(), _playerThread([&](){_player.run();}),
+   _nextConnectionID(0) {
     if (serverInstance) {
         // Running two server instances in the same process doesn't sound reasonable, so nothing
         // is designed to handle it.
@@ -89,6 +90,8 @@ Server::Server(ConfigManager & config)
 
         serverInstance = this;
     }
+
+    // TODO: also handle SIGPIPE for TCP connections timing out
 
     std::string port = std::to_string(config.getInt("port"));
     spdlog::get("logger")->trace("Setting up connection on port {}...", port);
@@ -114,6 +117,9 @@ Server::Server(ConfigManager & config)
 }
 
 Server::~Server() {
+    spdlog::get("logger")->trace("Signaling player thread...");
+    _player.stop();
+
     if (serverInstance == this) {
         spdlog::get("logger")->trace("Deregistering signal handlers...");
 
@@ -127,6 +133,9 @@ Server::~Server() {
     // Close the listening sockets
     spdlog::get("logger")->trace("Closing listening sockets...");
     if (_socket != -1) close(_socket);
+
+    spdlog::get("logger")->trace("Joining player thread...");
+    _playerThread.join();
 
     spdlog::get("logger")->trace("~Server() done.");
 }
@@ -236,4 +245,9 @@ void Server::handleClosingConnection(ConnectionID id) {
     _connections.remove_if([&id](ClientConnection const & connection) {
         return connection.id() == id;
     });
+}
+
+
+void Server::appendMusic(std::string const & url) {
+    _player.appendMusic(url);
 }

@@ -4,6 +4,9 @@
 #include <mutex>
 #include <list>
 #include <queue>
+#include <thread>
+
+#include "player.hpp"
 
 
 class ClientConnection;
@@ -23,6 +26,9 @@ private:
 
     bool _running; // Set to false when the server recieves SIGTERM
 
+    Player _player;
+    std::thread _playerThread;
+
     std::mutex _closingReqMutex; // Mutex for modifying what's below
     std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
     ConnectionID _nextConnectionID; // The ID of the next connection to be generated
@@ -39,6 +45,9 @@ public:
 private:
     void handleNewConnection(int socket); // Accepts a connection on the given socket
     void handleClosingConnection(ConnectionID id); // Destroy a connection object from its ID
+
+public:
+    void appendMusic(std::string const & url /* TODO: params */);
 };
 
 

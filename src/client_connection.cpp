@@ -166,7 +166,7 @@ public:
     using ReturnType  = std::unique_ptr<ClientConnection::Conversation>;
 
 private:
-    std::map<Key, ReturnType(*)()> _map;
+    std::map<Key, ReturnType(*)(ClientConnection & owner)> _map;
 
 public:
     template<typename... Ps>
@@ -177,7 +177,9 @@ public:
 private:
     template<typename K, template<typename> class H, typename V, typename... Ps>
     void insertAll(K&& k, H<V>, Ps&&... ps) {
-        _map.insert({std::forward<K>(k), [] { return ReturnType{std::make_unique<V>()}; }});
+        _map.insert({std::forward<K>(k), [](ClientConnection & owner){
+            return ReturnType{std::make_unique<V>(owner)};
+        }});
         insertAll(std::forward<Ps>(ps)...);
     }
 
@@ -223,14 +225,14 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
         try {
             if (id < 0) {
                 // One-off message
-                packetHandlers.at(_version)()->handlePacket(packet);
+                packetHandlers.at(_version)(*this)->handlePacket(packet);
             } else {
                 // Check if the conversation exists
                 auto conversation = _conversations.find(id);
                 if (conversation == _conversations.end()) {
                     conversation = std::get<0>(_conversations.emplace(
                         std::piecewise_construct,
-                        std::tuple(id), std::tuple(packetHandlers.at(_version)())
+                        std::tuple(id), std::tuple(packetHandlers.at(_version)(*this))
                     ));
                 }
                 if (_conversations[id]->handlePacket(packet) == Conversation::Status::FINISHED) {
@@ -269,7 +271,7 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     std::set<unsigned> requested;
     for (auto const & version : packet) {
         if (!version.is_number_unsigned()) {
-            spdlog::get("logger")->trace("ClientConnection[id={}] got malformed API array (expected only unsigned ints)");
+            spdlog::get("logger")->error("ClientConnection[id={}] got malformed API array (expected only unsigned ints)");
             return;
         }
         requested.insert(version.get<unsigned>());
@@ -281,9 +283,14 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
 
+void ClientConnection::addMusic(std::string const & url) {
+    // TODO: implement proper behavior
+    _server.appendMusic(url);
+}
 
-ClientConnection::Conversation::Conversation()
- : _lastActive(std::chrono::steady_clock::now()), _state(0) {}
+
+ClientConnection::Conversation::Conversation(ClientConnection & owner)
+ : _lastActive(std::chrono::steady_clock::now()), _state(0), _owner(owner) {}
 
 ClientConnection::Conversation::Status ClientConnection::Conversation::handlePacket(nlohmann::json const & packet) {
     Status status = _handlePacket(packet);

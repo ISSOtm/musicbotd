@@ -21,30 +21,34 @@ public:
     public:
         static std::chrono::steady_clock::duration const timeout;
 
-    public:
         enum class Status { FINISHED, CONTINUING, UNEXPECTED };
 
     private:
         std::chrono::steady_clock::time_point _lastActive;
         unsigned _state; // State internal to the type
+        ClientConnection & _owner;
 
     public:
-        Conversation();
+        Conversation(ClientConnection & owner);
         virtual ~Conversation() = default;
 
-        // Returns true if the packet processed was the last one, then the object is destroyed
-        Status handlePacket(nlohmann::json const & packet);
         // This behavior is identical for *all* classes
         bool hasTimedOut() const {
             return std::chrono::steady_clock::now() - _lastActive > timeout;
         };
-    protected:
+        // Returns true if the packet processed was the last one, then the object is destroyed
+        Status handlePacket(nlohmann::json const & packet);
+
+    protected: // This should be usable by implementors
+        template<typename PacketType, typename State, std::size_t size>
+        using TransitionMapping = std::array<std::map<PacketType, std::pair<Status, State> (*)(nlohmann::json const &, ClientConnection &)>, size>;
+
         // Utility function for children classes to call
-        template<std::size_t size, typename PacketType, typename State>
-        Status processStateMachine(std::array<std::map<PacketType, std::pair<Status, State> (*)(nlohmann::json const &)>, size> const & transitions, PacketType key, nlohmann::json const & packet) {
+        template<typename PacketType, typename State, std::size_t size>
+        Status processStateMachine(TransitionMapping<PacketType, State, size> const & transitions, PacketType key, nlohmann::json const & packet) {
             Status ret;
             try {
-                std::tie(ret, _state) = transitions[_state].at(key)(packet);
+                std::tie(ret, _state) = transitions[_state].at(key)(packet, _owner);
             } catch (std::out_of_range const &) {
                 throw std::out_of_range("state " + std::to_string(_state) + " got unexpected packet type " + packet["type"].dump());
             }
@@ -92,6 +96,10 @@ private:
     bool hasTimedOut() const { return std::chrono::steady_clock::now() - _lastActive > timeout; }
 
     void sendPacket(nlohmann::json const & packet);
+
+    // Methods called by the `Conversation`s
+public:
+    void addMusic(std::string const & url);
 };
 
 
