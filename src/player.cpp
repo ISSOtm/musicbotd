@@ -10,7 +10,7 @@ double const Player::timeout = 0.1;
 
 
 Player::Player()
- : _running(true), _mpv(mpv_create()), _mpvState(INITED) {
+ : _running(true), _mpv(mpv_create()) {
     if (_mpv == nullptr) {
         throw std::runtime_error("Failed to create MPV handle (does LC_NUMERIC != \"C\"?)");
     }
@@ -46,10 +46,6 @@ void Player::run() {
                 // Do nothing
                 break;
 
-            case MPV_EVENT_IDLE:
-                _mpvState = IDLE;
-                break;
-
             case MPV_EVENT_SHUTDOWN:
                 _running = false;
                 break;
@@ -67,13 +63,11 @@ void Player::stop() {
 void Player::play() {
     spdlog::get("logger")->trace("Unpausing MPV player");
     setProperty("pause", false);
-    _mpvState = PLAYING;
 }
 
 void Player::pause() {
     spdlog::get("logger")->trace("Pausing MPV player");
     setProperty("pause", true);
-    _mpvState = PAUSED;
 }
 
 void Player::appendMusic(std::string const & url) {

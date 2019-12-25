@@ -25,7 +25,6 @@ private:
     bool _running;
 
     mpv_handle * _mpv;
-    enum { INITED, IDLE, PLAYING, PAUSED } _mpvState;
 
     template<typename T, typename... Ts>
     int runCommand(T&& name, Ts&&... args) {
