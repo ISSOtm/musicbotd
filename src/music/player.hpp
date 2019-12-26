@@ -7,6 +7,8 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
+#include "music.hpp"
+
 
 template<typename>
 inline mpv_format getFormat() = delete;
@@ -38,6 +40,17 @@ private:
     }
 
     template<typename T>
+    T getProperty(char const * name) {
+        T data;
+        int retcode = mpv_get_property(_mpv, name, getFormat<T>(), &data);
+        if (retcode < 0) {
+            spdlog::get("logger")->error("Error getting MPV property " + std::string(name) + ": " + mpv_error_string(retcode));
+            // TODO: still returning `data`. This sucks. Make a `MPVError` class and throw it
+        }
+        return data;
+    }
+
+    template<typename T>
     int setProperty(char const * name, T data) {
         int retcode = mpv_set_property(_mpv, name, getFormat<T>(), &data);
         if (retcode < 0) {
@@ -54,7 +67,7 @@ public:
 
     void play();
     void pause();
-    void appendMusic(std::string const & url /* TODO: params */);
+    void appendMusic(Music const & music);
     void next();
 };
 

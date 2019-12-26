@@ -248,6 +248,6 @@ void Server::handleClosingConnection(ConnectionID id) {
 }
 
 
-void Server::appendMusic(std::string const & url) {
-    _player.appendMusic(url);
+void Server::appendMusic(Music const & music) {
+    _player.appendMusic(music);
 }

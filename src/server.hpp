@@ -6,7 +6,7 @@
 #include <queue>
 #include <thread>
 
-#include "player.hpp"
+#include "music/player.hpp"
 
 
 class ClientConnection;
@@ -47,7 +47,7 @@ private:
     void handleClosingConnection(ConnectionID id); // Destroy a connection object from its ID
 
 public:
-    void appendMusic(std::string const & url /* TODO: params */);
+    void appendMusic(Music const & music);
 };
 
 

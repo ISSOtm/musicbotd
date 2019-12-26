@@ -70,9 +70,10 @@ void Player::pause() {
     setProperty("pause", true);
 }
 
-void Player::appendMusic(std::string const & url) {
+void Player::appendMusic(Music const & music) {
+    std::string const & url = music.url();
     spdlog::get("logger")->trace("Queuing {}", url);
-    runCommand("loadfile", url.c_str(), "append-play" /* TODO: pass options, such as `start` and `stop` */);
+    runCommand("loadfile", url.c_str(), "append-play", music.options().c_str());
 }
 
 void Player::next() {

@@ -99,7 +99,7 @@ private:
 
     // Methods called by the `Conversation`s
 public:
-    void addMusic(std::string const & url);
+    void addMusic(std::string const & url, std::map<std::string, std::string> const & options);
 };
 
 

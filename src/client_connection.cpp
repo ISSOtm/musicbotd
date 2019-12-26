@@ -283,9 +283,14 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
 
-void ClientConnection::addMusic(std::string const & url) {
+void ClientConnection::addMusic(std::string const & url, std::map<std::string, std::string> const & options) {
+    Music music(url);
+    for (auto const & [key, value] : options) {
+        music.setOption(key, value);
+    }
+
     // TODO: implement proper behavior
-    _server.appendMusic(url);
+    _server.appendMusic(music);
 }
 
 
