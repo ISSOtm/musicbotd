@@ -54,7 +54,7 @@ void ClientConnection::run() {
         try {
             switch (poll(pollfds.data(), pollfds.size(), 100)) {
                 case -1:
-                    spdlog::get("logger")->error("ClientConnection[id={}].run() poll() error: {}", _id, strerror(errno));
+                    spdlog::get("logger")->error("ClientConnection[{}].run() poll() error: {}", _id, strerror(errno));
                     // fallthrough
 
                 case 0:
@@ -63,7 +63,7 @@ void ClientConnection::run() {
                 default:
                     for (unsigned i = 0; i < pollfds.size(); ++i) {
                         if (pollfds[i].revents & POLLERR) {
-                            spdlog::get("logger")->error("ClientConnection[id={}].run(): file descr {} [pollfd index {}] returned error", _id, pollfds[i].fd, i);
+                            spdlog::get("logger")->error("ClientConnection[{}].run(): file descr {} [pollfd index {}] returned error", _id, pollfds[i].fd, i);
                         }
                         if (pollfds[i].revents & (pollfds[i].events | POLLHUP)) {
                             (this->*handlers[i])(pollfds[i]);
@@ -77,7 +77,7 @@ void ClientConnection::run() {
                 auto cur = iter;
                 ++iter; // Get the next one now, since erasing invalidates `cur`
                 if (std::get<1>(*cur)->hasTimedOut()) {
-                    spdlog::get("logger")->error("ClientConnection[id={}] conv {} timed out",
+                    spdlog::get("logger")->error("ClientConnection[{}] conv {} timed out",
                                                  _id, std::get<0>(*cur));
                     _conversations.erase(cur);
                 }
@@ -89,10 +89,10 @@ void ClientConnection::run() {
             }
 
         } catch (std::exception const & e) {
-            spdlog::get("logger")->error("ClientConnection[id={}].run(): Exception at top level: {}", _id, e.what());
+            spdlog::get("logger")->error("ClientConnection[{}].run(): Exception at top level: {}", _id, e.what());
             stop();
         } catch (...) {
-            spdlog::get("logger")->error("ClientConnection[id={}].run(): Unknown exception at top level", _id);
+            spdlog::get("logger")->error("ClientConnection[{}].run(): Unknown exception at top level", _id);
             stop();
         }
     }
@@ -116,7 +116,7 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
         std::array<char, BUFSIZ> buffer;
         ssize_t size = recv(_socket, buffer.data(), buffer.size(), 0);
         if (size == -1) {
-            spdlog::get("logger")->error("ClientConnection[id={}] recv() error: {}", _id,
+            spdlog::get("logger")->error("ClientConnection[{}] recv() error: {}", _id,
                                          strerror(errno));
         } else if (size != 0) { // size == 0 happens when connection gets closed
             std::string_view readBuf(buffer.data(), std::min(size, (ssize_t)BUFSIZ));
@@ -134,7 +134,7 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
                     nlohmann::json packet = nlohmann::json::parse(_pending);
                     handlePacket(packet);
                 } catch (nlohmann::json::parse_error const & e) {
-                    spdlog::get("logger")->trace("ClientConnection[id={}] recieved malformed JSON: {}", _id, e.what());
+                    spdlog::get("logger")->trace("ClientConnection[{}] recieved malformed JSON: {}", _id, e.what());
                 }
                 // Reset buffer
                 _pending.clear();
@@ -144,7 +144,7 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
 
     if (fd.revents & (POLLRDHUP | POLLHUP)) {
         // Peer closed connection
-        spdlog::get("logger")->info("ClientConnection[id={}] closed by peer", _id);
+        spdlog::get("logger")->info("ClientConnection[{}] closed by peer", _id);
         terminate = true;
     }
 
@@ -201,12 +201,12 @@ static APIMappings const packetHandlers{
 };
 
 void ClientConnection::handlePacket(nlohmann::json const & packet) try {
-    spdlog::get("logger")->trace("ClientConnection[id={}] (version={}) recieved json {}",
+    spdlog::get("logger")->trace("ClientConnection[{}] (version={}) recieved json {}",
                                  _id, _version, packet.dump());
     if (_version == 0) {
         // Negotiating API version
         if (!packet.is_array()) {
-            spdlog::get("logger")->error("ClientConnection[id={}] expected API version array, rejecting", _id);
+            spdlog::get("logger")->error("ClientConnection[{}] expected API version array, rejecting", _id);
             return;
         }
         handleNegotiation(packet);
@@ -216,7 +216,7 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
     } else {
         // Parse ID field to assign this to the correct conversation
         if (!packet.is_object()) {
-            spdlog::get("logger")->error("ClientConnection[id={}] expected object, rejecting",
+            spdlog::get("logger")->error("ClientConnection[{}] expected object, rejecting",
                                          _id);
             return;
         }
@@ -243,11 +243,11 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
             _lastActive = std::chrono::steady_clock::now();
 
         } catch (std::out_of_range const &) {
-            spdlog::get("logger")->error("ClientConnection[id={}] conv {} recieved unexpected packet type {}", _id, id, packet["type"].get<unsigned>());
+            spdlog::get("logger")->error("ClientConnection[{}] conv {} recieved unexpected packet type {}", _id, id, packet["type"].get<unsigned>());
         }
     }
 } catch (nlohmann::json::exception const & e) {
-    spdlog::get("logger")->error("ClientConnection[id={}] got JSON error while using packet, rejecting: {}", _id, e.what());
+    spdlog::get("logger")->error("ClientConnection[{}] got JSON error while using packet, rejecting: {}", _id, e.what());
 }
 
 
@@ -271,7 +271,7 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     std::set<unsigned> requested;
     for (auto const & version : packet) {
         if (!version.is_number_unsigned()) {
-            spdlog::get("logger")->error("ClientConnection[id={}] got malformed API array (expected only unsigned ints)");
+            spdlog::get("logger")->error("ClientConnection[{}] got malformed API array (expected only unsigned ints)");
             return;
         }
         requested.insert(version.get<unsigned>());
@@ -279,7 +279,7 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
 
     // Find the largest common element, and send that
     _version = mostRecentSharedVersion(supported, requested);
-    spdlog::get("logger")->trace("ClientConnection[id={}] selected version {}", _id, _version);
+    spdlog::get("logger")->trace("ClientConnection[{}] selected version {}", _id, _version);
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
 
