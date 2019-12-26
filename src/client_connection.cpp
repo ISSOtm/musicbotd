@@ -156,7 +156,15 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
 
 void ClientConnection::sendPacket(nlohmann::json const & packet) {
     std::string const data = packet.dump();
-    send(_socket, data.data(), data.size(), MSG_NOSIGNAL);
+    if (send(_socket, data.data(), data.size(), MSG_NOSIGNAL) == -1) {
+        spdlog::get("logger")->error("ClientConnection[{}] send() error: {}", _id,
+                                     strerror(errno));
+
+        if (errno == EPIPE) {
+            // If the connection suffers a broken pipe (= timeout), kill it
+            stop();
+        }
+    }
 }
 
 
