@@ -155,7 +155,8 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
 
 
 void ClientConnection::sendPacket(nlohmann::json const & packet) {
-    // TODO
+    std::string const data = packet.dump();
+    send(_socket, data.data(), data.size(), MSG_NOSIGNAL);
 }
 
 
