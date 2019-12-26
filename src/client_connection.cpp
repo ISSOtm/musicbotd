@@ -247,7 +247,7 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
         }
     }
 } catch (nlohmann::json::exception const & e) {
-    spdlog::get("logger")->error("ClientConnection[id={}] got JSON error while using packet, rejecting: ", _id, e.what());
+    spdlog::get("logger")->error("ClientConnection[id={}] got JSON error while using packet, rejecting: {}", _id, e.what());
 }
 
 
