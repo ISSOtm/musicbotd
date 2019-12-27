@@ -175,7 +175,7 @@ public:
     using ReturnType  = std::unique_ptr<ClientConnection::Conversation>;
 
 private:
-    std::map<Key, ReturnType(*)(ClientConnection & owner)> _map;
+    std::map<Key, ReturnType(*)(ClientConnection & owner, int id)> _map;
 
 public:
     template<typename... Ps>
@@ -186,8 +186,8 @@ public:
 private:
     template<typename K, template<typename> class H, typename V, typename... Ps>
     void insertAll(K&& k, H<V>, Ps&&... ps) {
-        _map.insert({std::forward<K>(k), [](ClientConnection & owner){
-            return ReturnType{std::make_unique<V>(owner)};
+        _map.insert({std::forward<K>(k), [](ClientConnection & owner, int id){
+            return ReturnType{std::make_unique<V>(owner, id)};
         }});
         insertAll(std::forward<Ps>(ps)...);
     }
@@ -234,14 +234,14 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
         try {
             if (id < 0) {
                 // One-off message
-                packetHandlers.at(_version)(*this)->handlePacket(packet);
+                packetHandlers.at(_version)(*this, id)->handlePacket(packet);
             } else {
                 // Check if the conversation exists
                 auto conversation = _conversations.find(id);
                 if (conversation == _conversations.end()) {
                     conversation = std::get<0>(_conversations.emplace(
                         std::piecewise_construct,
-                        std::tuple(id), std::tuple(packetHandlers.at(_version)(*this))
+                        std::tuple(id), std::tuple(packetHandlers.at(_version)(*this, id))
                     ));
                 }
                 if (_conversations[id]->handlePacket(packet) == Conversation::Status::FINISHED) {
@@ -303,8 +303,8 @@ void ClientConnection::addMusic(std::string const & url, std::map<std::string, s
 }
 
 
-ClientConnection::Conversation::Conversation(ClientConnection & owner)
- : _lastActive(std::chrono::steady_clock::now()), _state(0), _owner(owner) {}
+ClientConnection::Conversation::Conversation(ClientConnection & owner, int id)
+ : _lastActive(std::chrono::steady_clock::now()), _state(0), _owner(owner), _id(id) {}
 
 ClientConnection::Conversation::Status ClientConnection::Conversation::handlePacket(nlohmann::json const & packet) {
     Status status = _handlePacket(packet);
@@ -313,4 +313,9 @@ ClientConnection::Conversation::Status ClientConnection::Conversation::handlePac
         _lastActive = std::chrono::steady_clock::now();
     }
     return status;
+}
+
+void ClientConnection::Conversation::sendPacket(nlohmann::json & json) {
+    json["id"] = _id;
+    _owner.sendPacket(json);
 }

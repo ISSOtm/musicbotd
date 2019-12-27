@@ -33,9 +33,10 @@ public:
         std::chrono::steady_clock::time_point _lastActive;
         unsigned _state; // State internal to the type
         ClientConnection & _owner;
+        int _id;
 
     public:
-        Conversation(ClientConnection & owner);
+        Conversation(ClientConnection & owner, int id);
         virtual ~Conversation() = default;
 
         // This behavior is identical for *all* classes
@@ -64,6 +65,7 @@ public:
             std::tie(ret, _state) = transitionFunc(packet, _owner);
             return ret;
         }
+        void sendPacket(nlohmann::json & json);
     private:
         // Each implementation's own packet handling
         virtual Status _handlePacket(nlohmann::json const & packet) = 0;

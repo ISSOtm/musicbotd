@@ -2,9 +2,6 @@
 #include "../client_connection.hpp"
 
 
-v1Conversation::v1Conversation(ClientConnection & owner)
- : Conversation(owner) {}
-
 v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & packet) {
     std::array const handlers{
         std::map{ // NONE
@@ -28,6 +25,16 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
         }
     };
 
-    return processStateMachine(handlers, ClientPacketType(packet["type"].get<unsigned>()),
-                               packet);
+    try {
+        return processStateMachine(handlers, ClientPacketType(packet["type"].get<unsigned>()),
+                                   packet);
+    } catch (StateMachineRejection const & e) {
+        nlohmann::json packet{
+            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+            {"code", static_cast<unsigned>(ServerStatuses::UNEXPECTED)},
+            {"msg", "Packet could not be handled by the state machine"}
+        };
+        sendPacket(packet);
+        throw e;
+    }
 }

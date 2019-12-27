@@ -40,8 +40,20 @@ public:
         PL_DEL
     };
 
+    enum class ServerStatuses : unsigned {
+        OK,
+        REJECTED,   // Input packet itself was malformed
+        ERROR,      // Internal error occurred during processing
+        TIMEOUT,    // Conversation timed out
+        UNEXPECTED, // Packet was rejected by the state machine
+
+        PERMS, // Permission denied, reason depends on context
+        BAD_PASS,
+        NOT_FOUND
+    };
+
 public:
-    v1Conversation(ClientConnection & owner);
+    v1Conversation(ClientConnection & owner, int id) : Conversation(owner, id) {}
 
     Status _handlePacket(nlohmann::json const & packet) override;
 };
