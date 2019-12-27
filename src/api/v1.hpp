@@ -43,7 +43,7 @@ public:
 public:
     v1Conversation(ClientConnection & owner);
 
-    Status _handlePacket(nlohmann::json const & packet);
+    Status _handlePacket(nlohmann::json const & packet) override;
 };
 
 
