@@ -251,8 +251,8 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
 
             _lastActive = std::chrono::steady_clock::now();
 
-        } catch (std::out_of_range const &) {
-            spdlog::get("logger")->error("ClientConnection[{}] conv {} recieved unexpected packet type {}", _id, id, packet["type"].get<unsigned>());
+        } catch (Conversation::StateMachineRejection const & e) {
+            spdlog::get("logger")->error("ClientConnection[{}] conv {}: {}", _id, id, e.what());
         }
     }
 } catch (nlohmann::json::exception const & e) {

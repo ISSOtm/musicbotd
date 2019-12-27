@@ -23,6 +23,12 @@ public:
 
         enum class Status { FINISHED, CONTINUING, UNEXPECTED };
 
+        class StateMachineRejection : public std::runtime_error {
+        public:
+            StateMachineRejection(unsigned state, unsigned key)
+             : std::runtime_error("state " + std::to_string(state) + " got unexpected packet type " + std::to_string(key)) {}
+        };
+
     private:
         std::chrono::steady_clock::time_point _lastActive;
         unsigned _state; // State internal to the type
@@ -40,18 +46,22 @@ public:
         Status handlePacket(nlohmann::json const & packet);
 
     protected: // This should be usable by implementors
+        template<typename State>
+        using TransitionFunc = std::pair<Status, State> (*)(nlohmann::json const &, ClientConnection &);
         template<typename PacketType, typename State, std::size_t size>
-        using TransitionMapping = std::array<std::map<PacketType, std::pair<Status, State> (*)(nlohmann::json const &, ClientConnection &)>, size>;
+        using TransitionMapping = std::array<std::map<PacketType, TransitionFunc<State>>, size>;
 
         // Utility function for children classes to call
         template<typename PacketType, typename State, std::size_t size>
         Status processStateMachine(TransitionMapping<PacketType, State, size> const & transitions, PacketType key, nlohmann::json const & packet) {
-            Status ret;
+            TransitionFunc<State> transitionFunc;
             try {
-                std::tie(ret, _state) = transitions[_state].at(key)(packet, _owner);
+                transitionFunc = transitions[_state].at(key);
             } catch (std::out_of_range const &) {
-                throw std::out_of_range("state " + std::to_string(_state) + " got unexpected packet type " + packet["type"].dump());
+                throw StateMachineRejection(_state, static_cast<unsigned>(key));
             }
+            Status ret;
+            std::tie(ret, _state) = transitionFunc(packet, _owner);
             return ret;
         }
     private:
