@@ -19,20 +19,30 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                     }
                 }
 
-                connection.addMusic(packet["url"].get<std::string>(), options);
+                connection.addMusic(packet.at("url").get<std::string>(), options);
                 return std::pair(Status::FINISHED, State::NONE);
             }}
         }
     };
 
     try {
-        return processStateMachine(handlers, ClientPacketType(packet["type"].get<unsigned>()),
+        return processStateMachine(handlers, ClientPacketType(packet.at("type").get<unsigned>()),
                                    packet);
+
     } catch (StateMachineRejection const & e) {
         nlohmann::json packet{
             {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
             {"code", static_cast<unsigned>(ServerStatuses::UNEXPECTED)},
             {"msg", "Packet could not be handled by the state machine"}
+        };
+        sendPacket(packet);
+        throw e;
+
+    } catch (nlohmann::json::exception const & e) {
+        nlohmann::json packet{
+            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+            {"code", static_cast<unsigned>(ServerStatuses::REJECTED)},
+            {"msg", e.what()} // TODO: process the message better than the default message
         };
         sendPacket(packet);
         throw e;
