@@ -54,7 +54,8 @@ void ClientConnection::run() {
         try {
             switch (poll(pollfds.data(), pollfds.size(), 100)) {
                 case -1:
-                    spdlog::get("logger")->error("ClientConnection[{}].run() poll() error: {}", _id, strerror(errno));
+                    spdlog::get("logger")->error("ClientConnection[{}].run() poll() error: {}",
+                                                 _id, strerror(errno));
                     // fallthrough
 
                 case 0:
@@ -200,7 +201,8 @@ public:
     decltype(_map)::const_iterator end() const { return _map.end(); }
 };
 
-template<typename T> struct APIVersion {}; // Semi-useless type, only used to pass its parameter type
+// Semi-useless type, only used to pass its parameter type
+template<typename T> struct APIVersion {};
 
 static APIMappings const packetHandlers{
     // Note: this should never have a key of "0"
@@ -292,7 +294,8 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
 
-void ClientConnection::addMusic(std::string const & url, std::map<std::string, std::string> const & options) {
+void ClientConnection::addMusic(std::string const & url,
+                                std::map<std::string, std::string> const & options) {
     Music music(url);
     for (auto const & [key, value] : options) {
         music.setOption(key, value);

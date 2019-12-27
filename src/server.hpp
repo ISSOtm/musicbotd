@@ -34,7 +34,8 @@ private:
     ConnectionID _nextConnectionID; // The ID of the next connection to be generated
     std::list<ClientConnection> _connections;
 
-    void tryConnectSocket(std::string const & port, struct addrinfo const * hints, char const * protocol);
+    void tryConnectSocket(std::string const & port, struct addrinfo const * hints,
+                          char const * protocol);
 public:
     Server(ConfigManager & config);
     ~Server();

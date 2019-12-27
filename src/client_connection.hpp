@@ -48,7 +48,8 @@ public:
 
     protected: // This should be usable by implementors
         template<typename State>
-        using TransitionFunc = std::pair<Status, State> (*)(nlohmann::json const &, ClientConnection &);
+        using TransitionFunc = std::pair<Status, State> (*)(nlohmann::json const &,
+                                                            ClientConnection &);
         template<typename PacketType, typename State, std::size_t size>
         using TransitionMapping = std::array<std::map<PacketType, TransitionFunc<State>>, size>;
 
