@@ -18,6 +18,7 @@ Player::Player()
     spdlog::get("logger")->trace("Configuring and init-ing MPV player...");
 
     // Set config options
+    mpv_set_option_string(_mpv, "cache", "yes"); // Enable caching since all comes from the net
     mpv_set_option_string(_mpv, "load-scripts", "no"); // Don't load config scripts
     mpv_set_option_string(_mpv, "vid", "no"); // Disable video playback, we're only doing audio!
 
