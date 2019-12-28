@@ -250,8 +250,3 @@ void Server::handleClosingConnection(ConnectionID id) {
         return connection.id() == id;
     });
 }
-
-
-void Server::appendMusic(Music const & music) {
-    _player.appendMusic(music);
-}

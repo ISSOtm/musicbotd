@@ -48,7 +48,9 @@ private:
     void handleClosingConnection(ConnectionID id); // Destroy a connection object from its ID
 
 public:
-    void appendMusic(Music const & music);
+    void play() { _player.play(); }
+    void pause() { _player.pause(); }
+    void appendMusic(Music const & music) { _player.appendMusic(music); }
 };
 
 

@@ -21,6 +21,11 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
                 connection.addMusic(packet.at("url").get<std::string>(), options);
                 return std::pair(Status::FINISHED, State::NONE);
+            }},
+
+            std::pair{ClientPacketType::PAUSE, +[](nlohmann::json const & packet, ClientConnection & connection){
+                packet["stop"].get<bool>() ? connection.pause() : connection.play();
+                return std::pair(Status::FINISHED, State::NONE);
             }}
         }
     };

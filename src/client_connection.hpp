@@ -113,6 +113,8 @@ private:
     // Methods called by the `Conversation`s
 public:
     void addMusic(std::string const & url, std::map<std::string, std::string> const & options);
+    void play() { _server.play(); }
+    void pause() { _server.pause(); }
 };
 
 
