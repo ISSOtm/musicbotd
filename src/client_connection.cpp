@@ -34,6 +34,7 @@ ClientConnection::~ClientConnection() {
     _thread.join();
 
     close(_socket);
+    unsubscribe();
 
     spdlog::get("logger")->trace("~ClientConnection({}) done.", _id);
 }
