@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -22,17 +23,18 @@ private:
     decltype(_playlists)::const_iterator const _global_list;
     decltype(_playlists)::iterator _next; // Next candidate for music addition
 
+    std::mutex _mutex;
+
     std::thread _thread;
 
 public:
     MusicManager();
 
-    Playlist const & playlist(std::string const & name) const { return _playlists.at(name); }
     Music const & nextMusic();
 
     void addMusic(std::string const & name, Music const & music);
-    void subscribe(std::string const & name) { _playlists.at(name).subscribe(); }
-    void unsubscribe(std::string const & name) { _playlists.at(name).unsubscribe(); }
+    void subscribe(std::string const & name);
+    void unsubscribe(std::string const & name);
 };
 
 

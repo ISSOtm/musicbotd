@@ -11,6 +11,8 @@ MusicManager::MusicManager()
 }
 
 Music const & MusicManager::nextMusic() {
+    std::lock_guard lock(_mutex);
+
     // First, find a playlist that's ready to add from
     bool looped = false;
     do {
@@ -27,6 +29,8 @@ Music const & MusicManager::nextMusic() {
 
 
 void MusicManager::addMusic(std::string const & playlist, Music const & music) {
+    std::lock_guard lock(_mutex);
+
     typename decltype(_musics)::const_iterator iter;
 
     if (!playlist.empty()) {
@@ -37,4 +41,13 @@ void MusicManager::addMusic(std::string const & playlist, Music const & music) {
             return std::get<1>(pair) == music;
         });
     }
+}
+void MusicManager::subscribe(std::string const & playlist) {
+    std::lock_guard lock(_mutex);
+    _playlists.at(playlist).subscribe();
+}
+
+void MusicManager::unsubscribe(std::string const & playlist) {
+    std::lock_guard lock(_mutex);
+    _playlists.at(playlist).unsubscribe();
 }
