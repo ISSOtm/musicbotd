@@ -14,6 +14,7 @@ MusicManager::MusicManager()
 }
 
 Music const & MusicManager::nextMusic() {
+    spdlog::get("logger")->trace("Trying to add new music...");
     std::lock_guard lock(_mutex);
 
     // First, find a playlist that's ready to add from
@@ -58,11 +59,13 @@ void MusicManager::addMusic(std::string const & playlist, Music const & music) {
 }
 
 void MusicManager::subscribe(std::string const & playlist) {
+    spdlog::get("logger")->trace("Subscribed to playlist \"{}\"", playlist);
     std::lock_guard lock(_mutex);
     _playlists.at(playlist).subscribe();
 }
 
 void MusicManager::unsubscribe(std::string const & playlist) {
+    spdlog::get("logger")->trace("Unsubscribed from playlist \"{}\"", playlist);
     std::lock_guard lock(_mutex);
     _playlists.at(playlist).unsubscribe();
 }
