@@ -1,4 +1,7 @@
 
+#include <random>
+#include <spdlog/spdlog.h>
+
 #include "music_manager.hpp"
 
 
@@ -29,9 +32,10 @@ Music const & MusicManager::nextMusic() {
 
 
 void MusicManager::addMusic(std::string const & playlist, Music const & music) {
+    spdlog::get("logger")->trace("Adding \"{}\" to \"{}\"", music.url(), playlist);
     std::lock_guard lock(_mutex);
 
-    typename decltype(_musics)::const_iterator iter;
+    typename decltype(_musics)::const_iterator iter = _musics.end();
 
     if (!playlist.empty()) {
         addMusic("", music); // Add to the global playlist as well
@@ -41,7 +45,17 @@ void MusicManager::addMusic(std::string const & playlist, Music const & music) {
             return std::get<1>(pair) == music;
         });
     }
+
+    if (iter == _musics.end()) {
+        std::minstd_rand rng;
+        bool inserted;
+        do {
+            std::tie(iter, inserted) = _musics.emplace(std::uniform_int_distribution<ID>()(rng),
+                                                       music);
+        } while (!inserted);
+    }
 }
+
 void MusicManager::subscribe(std::string const & playlist) {
     std::lock_guard lock(_mutex);
     _playlists.at(playlist).subscribe();
