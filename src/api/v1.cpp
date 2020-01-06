@@ -9,7 +9,15 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::MUS_ADD, +[](nlohmann::json const & packet, ClientConnection & connection){
+            std::pair{ClientPacketType::PL_SUB, +[](nlohmann::json const & packet,
+                                                    ClientConnection & connection) {
+                packet["sub"].get<bool>() ? connection.subscribe()
+                                          : connection.unsubscribe();
+                return std::pair(Status::FINISHED, State::NONE);
+            }},
+
+            std::pair{ClientPacketType::MUS_ADD, +[](nlohmann::json const & packet,
+                                                     ClientConnection & connection) {
                 // Parse options
                 std::map<std::string, std::string> options;
                 auto iter = packet.find("options");
