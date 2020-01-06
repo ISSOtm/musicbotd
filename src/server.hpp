@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 
+#include "music/music_manager.hpp"
 #include "music/player.hpp"
 
 
@@ -31,6 +32,8 @@ private:
     ConnectionID _nextConnectionID; // The ID of the next connection to be generated
     std::list<ClientConnection> _connections;
 
+    MusicManager _manager;
+
     Player _player;
     std::thread _playerThread;
 
@@ -50,7 +53,12 @@ private:
 public:
     void play() { _player.play(); }
     void pause() { _player.pause(); }
+    void addMusic(std::string const & playlist, Music const & music) {
+        _manager.addMusic(playlist, music);
+    }
     void appendMusic(Music const & music) { _player.appendMusic(music); }
+    void subscribe(std::string const & name) { _manager.subscribe(name); }
+    void unsubscribe(std::string const & name) { _manager.unsubscribe(name); }
 };
 
 

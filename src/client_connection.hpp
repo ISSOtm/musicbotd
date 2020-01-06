@@ -86,6 +86,9 @@ private:
     std::map<int, std::unique_ptr<Conversation>> _conversations;
     std::chrono::steady_clock::time_point _lastActive;
 
+    std::string _playlistName;
+    bool _subscribed;
+
     bool _destructing; // Set to true when the object is being destructed
     bool _running; // Set to false when the thread stops
     bool _stopping; // Set to true when the thread should stop (but it may still be running)
@@ -115,6 +118,9 @@ public:
     void addMusic(std::string const & url, std::map<std::string, std::string> const & options);
     void play() { _server.play(); }
     void pause() { _server.pause(); }
+    void subscribe();
+    void unsubscribe();
+    void selectPlaylist(std::string const & name);
 };
 
 

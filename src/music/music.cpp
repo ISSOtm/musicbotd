@@ -39,3 +39,8 @@ std::string Music::options() const {
     }
     return options;
 }
+
+
+bool Music::operator==(Music const & music) const {
+    return _url == music._url && _options == music._options;
+}

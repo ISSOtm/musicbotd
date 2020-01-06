@@ -20,9 +20,10 @@ std::chrono::steady_clock::duration const ClientConnection::Conversation::timeou
 
 
 ClientConnection::ClientConnection(int socket, Server & server, Server::ConnectionID id)
- : _socket(socket), _server(server), _id(id), _pending(), _version(0), _conversations(),
-   _lastActive(std::chrono::steady_clock::now()), _destructing(false), _running(true),
-   _stopping(false), _thread([&](){run();}) {}
+ : _socket(socket), _server(server), _id(id),
+   _pending(), _version(0), _conversations(), _lastActive(std::chrono::steady_clock::now()),
+   _playlistName(""), _subscribed(false),
+   _destructing(false), _running(true), _stopping(false), _thread([&](){run();}) {}
 
 ClientConnection::~ClientConnection() {
     _destructing = true;
@@ -301,8 +302,28 @@ void ClientConnection::addMusic(std::string const & url,
         music.setOption(key, value);
     }
 
-    // TODO: implement proper behavior
-    _server.appendMusic(music);
+    _server.addMusic(_playlistName, music);
+
+    // Do not add to the queue if we're already subscribed (and already adding musics)
+    if (!_subscribed) _server.appendMusic(music);
+}
+
+void ClientConnection::subscribe() {
+    if(!_subscribed) {
+        _server.subscribe(_playlistName);
+        _subscribed = true;
+    }
+}
+void ClientConnection::unsubscribe() {
+    if(_subscribed) {
+        _server.unsubscribe(_playlistName);
+        _subscribed = false;
+    }
+}
+void ClientConnection::selectPlaylist(std::string const & name) {
+    unsubscribe();
+    _playlistName = name;
+    subscribe();
 }
 
 

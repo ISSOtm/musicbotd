@@ -17,6 +17,8 @@ public:
 
     std::string const & url() const { return _url; }
     std::string options() const;
+
+    bool operator==(Music const & music) const;
 };
 
 
