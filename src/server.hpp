@@ -26,13 +26,13 @@ private:
 
     bool _running; // Set to false when the server recieves SIGTERM
 
-    Player _player;
-    std::thread _playerThread;
-
     std::mutex _closingReqMutex; // Mutex for modifying what's below
     std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
     ConnectionID _nextConnectionID; // The ID of the next connection to be generated
     std::list<ClientConnection> _connections;
+
+    Player _player;
+    std::thread _playerThread;
 
     void tryConnectSocket(std::string const & port, struct addrinfo const * hints,
                           char const * protocol);
