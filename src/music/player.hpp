@@ -11,13 +11,22 @@
 
 
 template<typename>
-inline mpv_format getFormat() = delete;
+struct Format{};
 template<>
-inline mpv_format getFormat<bool>() { return MPV_FORMAT_FLAG; }
+struct Format<bool> {
+    static constexpr mpv_format format = MPV_FORMAT_FLAG;
+    using type = int;
+};
 template<>
-inline mpv_format getFormat<int64_t>() { return MPV_FORMAT_INT64; }
+struct Format<int64_t> {
+    static constexpr mpv_format format = MPV_FORMAT_INT64;
+    using type = int64_t;
+};
 template<>
-inline mpv_format getFormat<double>() { return MPV_FORMAT_DOUBLE; }
+struct Format<double> {
+    static constexpr mpv_format format = MPV_FORMAT_DOUBLE;
+    using type = double;
+};
 
 class Player {
 public:
@@ -41,8 +50,8 @@ private:
 
     template<typename T>
     T getProperty(char const * name) {
-        T data;
-        int retcode = mpv_get_property(_mpv, name, getFormat<T>(), &data);
+        typename Format<T>::type data;
+        int retcode = mpv_get_property(_mpv, name, Format<T>::format, &data);
         if (retcode < 0) {
             spdlog::get("logger")->error("Error getting MPV property " + std::string(name) + ": " + mpv_error_string(retcode));
             // TODO: still returning `data`. This sucks. Make a `MPVError` class and throw it
@@ -51,8 +60,9 @@ private:
     }
 
     template<typename T>
-    int setProperty(char const * name, T data) {
-        int retcode = mpv_set_property(_mpv, name, getFormat<T>(), &data);
+    int setProperty(char const * name, T&& data) {
+        typename Format<T>::type mpvData = std::forward<T>(data);
+        int retcode = mpv_set_property(_mpv, name, Format<T>::format, &mpvData);
         if (retcode < 0) {
             spdlog::get("logger")->error("Error setting MPV property " + std::string(name) + ": " + mpv_error_string(retcode));
         }
