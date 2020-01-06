@@ -33,26 +33,27 @@ Music const & MusicManager::nextMusic() {
 
 void MusicManager::addMusic(std::string const & playlist, Music const & music) {
     spdlog::get("logger")->trace("Adding \"{}\" to \"{}\"", music.url(), playlist);
-    std::lock_guard lock(_mutex);
+    {
+        std::lock_guard lock(_mutex);
 
-    typename decltype(_musics)::const_iterator iter = _musics.end();
+        typename decltype(_musics)::const_iterator iter =
+            std::find_if(_musics.begin(), _musics.end(),
+                         [&music](typename decltype(_musics)::value_type const & pair) {
+                           return std::get<1>(pair) == music;
+            });
 
-    if (!playlist.empty()) {
-        addMusic("", music); // Add to the global playlist as well
-    } else {
-        iter = std::find_if(_musics.begin(), _musics.end(),
-                            [&music](typename decltype(_musics)::value_type const & pair) {
-            return std::get<1>(pair) == music;
-        });
+        if (iter == _musics.end()) {
+            std::minstd_rand rng;
+            bool inserted;
+            do {
+                std::tie(iter, inserted) = _musics.emplace(std::uniform_int_distribution<ID>()(rng),
+                                                           music);
+            } while (!inserted);
+        }
     }
 
-    if (iter == _musics.end()) {
-        std::minstd_rand rng;
-        bool inserted;
-        do {
-            std::tie(iter, inserted) = _musics.emplace(std::uniform_int_distribution<ID>()(rng),
-                                                       music);
-        } while (!inserted);
+    if (!playlist.empty()) {
+        addMusic("", music);
     }
 }
 
