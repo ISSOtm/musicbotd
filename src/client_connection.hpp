@@ -45,6 +45,7 @@ public:
         bool hasTimedOut() const {
             return std::chrono::steady_clock::now() - _lastActive > timeout;
         };
+        virtual void sendTimeout() = 0; // Called when the conversation times out
         // Returns true if the packet processed was the last one, then the object is destroyed
         Status handlePacket(nlohmann::json const & packet);
 

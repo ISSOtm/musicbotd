@@ -104,6 +104,15 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
     }
 }
 
+
+void v1Conversation::sendTimeout() {
+    nlohmann::json packet{
+        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+        {"code", static_cast<unsigned>(ServerStatuses::TIMEOUT)}
+    };
+    sendPacket(packet);
+}
+
 void v1Conversation::sendSuccess() {
     nlohmann::json packet{
         {"type", static_cast<unsigned>(ServerPacketType::STATUS)},

@@ -82,6 +82,7 @@ void ClientConnection::run() {
                 if (std::get<1>(*cur)->hasTimedOut()) {
                     spdlog::get("logger")->error("ClientConnection[{}] conv {} timed out",
                                                  _id, std::get<0>(*cur));
+                    std::get<1>(*cur)->sendTimeout();
                     _conversations.erase(cur);
                 }
             }
