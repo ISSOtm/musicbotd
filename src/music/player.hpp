@@ -4,6 +4,7 @@
 
 #include <mpv/client.h>
 
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
 
@@ -27,10 +28,15 @@ struct Format<double> {
     static constexpr mpv_format format = MPV_FORMAT_DOUBLE;
     using type = double;
 };
+template<>
+struct Format<mpv_node> {
+    static constexpr mpv_format format = MPV_FORMAT_NODE;
+    using type = mpv_node;
+};
 
 class Player {
 public:
-    static double const timeout;
+    static double constexpr timeout = 0.1;
 
 private:
     bool _running;
@@ -50,7 +56,7 @@ private:
     }
 
     template<typename T>
-    T getProperty(char const * name) {
+    T getProperty(char const * name) const {
         typename Format<T>::type data;
         int retcode = mpv_get_property(_mpv, name, Format<T>::format, &data);
         if (retcode < 0) {
@@ -70,6 +76,7 @@ private:
         return retcode;
     }
 
+
 public:
     Player();
     ~Player();
@@ -81,6 +88,8 @@ public:
     void pause();
     void play();
     void seek(double seconds);
+
+    nlohmann::json status() const;
 };
 
 

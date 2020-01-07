@@ -46,6 +46,7 @@ public:
             return std::chrono::steady_clock::now() - _lastActive > timeout;
         };
         virtual void sendTimeout() = 0; // Called when the conversation times out
+        virtual void heartbeat(nlohmann::json const & status) = 0;
         // Returns true if the packet processed was the last one, then the object is destroyed
         Status handlePacket(nlohmann::json const & packet);
 
@@ -119,8 +120,10 @@ private:
 
     void sendPacket(nlohmann::json const & packet);
 
-    // Methods called by the `Conversation`s
 public:
+    void heartbeat(nlohmann::json const & status);
+
+    // Methods called by the `Conversation`s
     bool subscribed() const { return _subscribed; }
     bool playlistExists(std::string const & name) const { return _server.playlistExists(name); }
 

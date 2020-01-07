@@ -1,12 +1,11 @@
 
+#include <cstring>
 #include <array>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
 #include "player.hpp"
 
-
-double const Player::timeout = 0.1;
 
 
 Player::Player()
@@ -87,4 +86,34 @@ void Player::play() {
 
 void Player::seek(double seconds) {
     runCommand("seek", std::to_string(seconds).c_str(), "absolute");
+}
+
+
+nlohmann::json Player::status() const {
+    nlohmann::json packet{
+        {"duration", getProperty<double>("duration")},
+        {"pause",    getProperty<bool>("pause")},
+        {"playlist", nlohmann::json::array()},
+        {"position", getProperty<double>("playback-time")}
+    };
+
+    // TODO: check the type of the union
+    mpv_node playlist = getProperty<mpv_node>("playlist");
+    for (int i = 0; i < playlist.u.list->num; i++) {
+        mpv_node const & node = playlist.u.list->values[i];
+        for (int j = 0; j < node.u.list->num; j++) {
+            char const * key       = node.u.list->keys[j];
+            mpv_node const & value = node.u.list->values[j];
+
+            if (!strcmp("filename", key)) {
+                packet["playlist"][i] = value.u.string;
+            } else if (!strcmp("title", key)) {
+                packet["playlist"][i] = value.u.string;
+                break; // This one has precedence over `filename`
+            }
+        }
+    }
+    mpv_free_node_contents(&playlist);
+
+    return packet;
 }

@@ -146,6 +146,17 @@ void v1Conversation::sendTimeout() {
     sendPacket(packet);
 }
 
+void v1Conversation::heartbeat(nlohmann::json const & status) {
+    nlohmann::json packet{
+        {"type", ServerPacketType::PULSE},
+        {"duration", status["duration"]},
+        {"pause", status["pause"]},
+        {"playlist", status["playlist"]},
+        {"position", status["position"]}
+    };
+    sendPacket(packet);
+}
+
 void v1Conversation::sendSuccess() {
     nlohmann::json packet{
         {"type", ServerPacketType::STATUS},

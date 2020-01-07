@@ -158,20 +158,6 @@ void ClientConnection::handleConnection(struct pollfd const & fd) {
 }
 
 
-void ClientConnection::sendPacket(nlohmann::json const & packet) {
-    std::string const data = packet.dump();
-    if (send(_socket, data.data(), data.size(), MSG_NOSIGNAL) == -1) {
-        spdlog::get("logger")->error("ClientConnection[{}] send() error: {}", _id,
-                                     strerror(errno));
-
-        if (errno == EPIPE) {
-            // If the connection suffers a broken pipe (= timeout), kill it
-            stop();
-        }
-    }
-}
-
-
 // This class wraps a `map` around API version handlers
 class APIMappings {
 public:
@@ -296,6 +282,26 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     spdlog::get("logger")->trace("ClientConnection[{}] selected version {}", _id, _version);
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
+
+
+void ClientConnection::sendPacket(nlohmann::json const & packet) {
+    std::string const data = packet.dump();
+    if (send(_socket, data.data(), data.size(), MSG_NOSIGNAL) == -1) {
+        spdlog::get("logger")->error("ClientConnection[{}] send() error: {}", _id,
+                                     strerror(errno));
+
+        if (errno == EPIPE) {
+            // If the connection suffers a broken pipe (= timeout), kill it
+            stop();
+        }
+    }
+}
+
+void ClientConnection::heartbeat(nlohmann::json const & status) {
+    if (_version == 0) return; // Don't send heartbeats to connections not initialized yet
+    packetHandlers.at(_version)(*this, -1)->heartbeat(status);
+}
+
 
 void ClientConnection::subscribe() {
     if(!_subscribed) {

@@ -41,7 +41,7 @@ void MusicManager::addMusic(std::string const & playlist, Music const & music) {
     spdlog::get("logger")->trace("Adding \"{}\" to \"{}\"", music.url(), playlist);
     std::lock_guard lock(_mutex);
 
-    typename decltype(_musics)::const_iterator iter =
+    decltype(_musics)::const_iterator iter =
         std::find_if(_musics.begin(), _musics.end(),
                      [&music](typename decltype(_musics)::value_type const & pair) {
                        return std::get<1>(pair) == music;

@@ -68,6 +68,7 @@ public:
 
     Status _handlePacket(nlohmann::json const & packet) override;
     void sendTimeout() override;
+    void heartbeat(nlohmann::json const & status) override;
 private:
     void sendSuccess();
 };

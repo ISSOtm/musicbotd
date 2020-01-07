@@ -9,6 +9,7 @@
 #include <csignal>
 #include <algorithm>
 #include <array>
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 
@@ -159,6 +160,7 @@ void Server::run() {
     spdlog::get("logger")->info("Up and running!");
 
 
+    std::chrono::steady_clock::time_point lastHeartbeat = std::chrono::steady_clock::now();
     while (_running) {
         // TODO: sometimes valgrind reports that the `sigmask` argument is incorrect?
         // How that is even possible beats me.
@@ -190,6 +192,19 @@ void Server::run() {
             while (!_closingRequests.empty()) {
                 handleClosingConnection(_closingRequests.front());
                 _closingRequests.pop();
+            }
+        }
+
+        // If it's been long enough, perform a heartbeat
+        {
+            using namespace std::chrono_literals;
+            if (std::chrono::steady_clock::now() - lastHeartbeat > 0.7s) {
+                lastHeartbeat = std::chrono::steady_clock::now();
+
+                nlohmann::json status = _player.status();
+                for (auto & connection : _connections) {
+                    connection.heartbeat(status);
+                }
             }
         }
     }
