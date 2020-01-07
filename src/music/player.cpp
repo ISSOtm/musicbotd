@@ -80,3 +80,7 @@ void Player::play() {
     spdlog::get("logger")->trace("Unpausing MPV player");
     setProperty("pause", false);
 }
+
+void Player::seek(double seconds) {
+    runCommand("seek", std::to_string(seconds).c_str(), "absolute");
+}

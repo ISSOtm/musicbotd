@@ -56,12 +56,13 @@ public:
     void addMusic(std::string const & playlist, Music const & music) {
         _manager.addMusic(playlist, music);
     }
+    void appendMusic(Music const & music) { _player.appendMusic(music); }
     void newPlaylist(std::string const & name, std::string const & pass) {
         _manager.newPlaylist(name, pass);
     }
     void pause() { _player.pause(); }
     void play() { _player.play(); }
-    void appendMusic(Music const & music) { _player.appendMusic(music); }
+    void seek(double seconds) { _player.seek(seconds); }
     void subscribe(std::string const & name) { _manager.subscribe(name); }
     void unsubscribe(std::string const & name) { _manager.unsubscribe(name); }
 };

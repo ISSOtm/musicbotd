@@ -80,6 +80,7 @@ public:
     void next();
     void pause();
     void play();
+    void seek(double seconds);
 };
 
 

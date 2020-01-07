@@ -127,6 +127,7 @@ public:
     }
     void pause() { _server.pause(); }
     void play() { _server.play(); }
+    void seek(double seconds) { _server.seek(seconds); }
     void selectPlaylist(std::string const & name);
     void subscribe();
     void unsubscribe();

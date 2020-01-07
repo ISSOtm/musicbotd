@@ -54,6 +54,12 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
+            std::pair{ClientPacketType::POS_SET, [&](nlohmann::json const & packet) {
+                _owner.seek(packet.at("pos").get<double>());
+                sendSuccess();
+                return std::pair(Status::FINISHED, State::NONE);
+            }},
+
             std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet) {
                 packet.at("stop").get<bool>() ? _owner.pause() : _owner.play();
                 sendSuccess();
