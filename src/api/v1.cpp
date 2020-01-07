@@ -101,6 +101,23 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
         };
         sendPacket(packet);
         throw e;
+
+    } catch (std::exception const & e) {
+        nlohmann::json packet{
+            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+            {"code", static_cast<unsigned>(ServerStatuses::ERROR)},
+            {"msg", e.what()}
+        };
+        sendPacket(packet);
+        throw e;
+    } catch (...) {
+        nlohmann::json packet{
+            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+            {"code", static_cast<unsigned>(ServerStatuses::ERROR)},
+            {"msg", "Unknown exception occurred within state machine"}
+        };
+        sendPacket(packet);
+        throw;
     }
 }
 
