@@ -39,9 +39,10 @@ private:
 
     template<typename T, typename... Ts>
     int runCommand(T&& name, Ts&&... args) {
-        int retcode = mpv_command(_mpv, (char const*[]){
+        char const * command[] = {
             std::forward<T>(name), std::forward<Ts>(args)..., nullptr
-        });
+        };
+        int retcode = mpv_command(_mpv, command);
         if (retcode < 0) {
             spdlog::get("logger")->error("Error while running MPV command " + std::string(name) + ": " + mpv_error_string(retcode));
         }
