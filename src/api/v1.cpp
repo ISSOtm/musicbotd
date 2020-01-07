@@ -4,25 +4,38 @@
 
 v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & packet) {
     std::array const handlers{
-        std::map{ // NONE
-            std::pair{ClientPacketType::PULSE, +[](nlohmann::json const &, ClientConnection &) {
+        std::map<ClientPacketType, TransitionFunc<State>>{ // NONE
+            std::pair{ClientPacketType::PULSE, [&](nlohmann::json const &, ClientConnection &) {
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::PL_SEL, +[](nlohmann::json const & packet,
+            std::pair{ClientPacketType::PL_SEL, [&](nlohmann::json const & packet,
                                                     ClientConnection & connection) {
-                connection.selectPlaylist(packet["name"].get<std::string>());
-                return std::pair(Status::FINISHED, State::NONE);
+                std::string playlist = packet["name"].get<std::string>();
+                if (connection.playlistExists(playlist)) {
+                    connection.selectPlaylist(playlist);
+                    return std::pair(Status::FINISHED, State::NONE);
+
+                } else {
+                    nlohmann::json packet{
+                        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+                        {"code", static_cast<unsigned>(ServerStatuses::NOT_FOUND)},
+                        {"msg", "Please enter a password to create the playlist with"}
+                    };
+                    sendPacket(packet);
+                    _playlist = playlist;
+                    return std::pair(Status::CONTINUING, State::PL_SEL);
+                }
             }},
 
-            std::pair{ClientPacketType::PL_SUB, +[](nlohmann::json const & packet,
+            std::pair{ClientPacketType::PL_SUB, [&](nlohmann::json const & packet,
                                                     ClientConnection & connection) {
                 packet["sub"].get<bool>() ? connection.subscribe()
                                           : connection.unsubscribe();
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::MUS_ADD, +[](nlohmann::json const & packet,
+            std::pair{ClientPacketType::MUS_ADD, [&](nlohmann::json const & packet,
                                                      ClientConnection & connection) {
                 Music music(packet.at("url").get<std::string>());
 
@@ -42,10 +55,29 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::PAUSE, +[](nlohmann::json const & packet, ClientConnection & connection){
+            std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet,
+                                                   ClientConnection & connection) {
                 packet["stop"].get<bool>() ? connection.pause() : connection.play();
                 return std::pair(Status::FINISHED, State::NONE);
             }}
+        },
+
+
+        std::map<ClientPacketType, TransitionFunc<State>>{ // AUTH
+        },
+
+
+        std::map<ClientPacketType, TransitionFunc<State>>{ // PL_SEL
+            std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet,
+                                                      ClientConnection & connection) {
+                connection.newPlaylist(_playlist, packet["pass"].get<std::string>());
+                connection.selectPlaylist(_playlist);
+                return std::pair(Status::FINISHED, State::NONE);
+            }}
+        },
+
+
+        std::map<ClientPacketType, TransitionFunc<State>>{ // PL_DEL
         }
     };
 

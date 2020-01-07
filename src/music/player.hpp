@@ -75,10 +75,10 @@ public:
     void run();
     void stop();
 
-    void play();
-    void pause();
     void appendMusic(Music const & music);
     void next();
+    void pause();
+    void play();
 };
 
 

@@ -61,16 +61,6 @@ void Player::stop() {
 }
 
 
-void Player::play() {
-    spdlog::get("logger")->trace("Unpausing MPV player");
-    setProperty("pause", false);
-}
-
-void Player::pause() {
-    spdlog::get("logger")->trace("Pausing MPV player");
-    setProperty("pause", true);
-}
-
 void Player::appendMusic(Music const & music) {
     std::string const & url = music.url();
     spdlog::get("logger")->trace("Queuing {}", url);
@@ -79,4 +69,14 @@ void Player::appendMusic(Music const & music) {
 
 void Player::next() {
     runCommand("playlist-next", "force");
+}
+
+void Player::pause() {
+    spdlog::get("logger")->trace("Pausing MPV player");
+    setProperty("pause", true);
+}
+
+void Player::play() {
+    spdlog::get("logger")->trace("Unpausing MPV player");
+    setProperty("pause", false);
 }

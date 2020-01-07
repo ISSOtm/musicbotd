@@ -52,6 +52,9 @@ public:
         NOT_FOUND
     };
 
+private:
+    std::string _playlist;
+
 public:
     v1Conversation(ClientConnection & owner, int id) : Conversation(owner, id) {}
 

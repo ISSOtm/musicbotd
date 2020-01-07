@@ -2,6 +2,7 @@
 #define CLIENT_CONNECTION_HPP
 
 #include <chrono>
+#include <functional>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -48,8 +49,8 @@ public:
 
     protected: // This should be usable by implementors
         template<typename State>
-        using TransitionFunc = std::pair<Status, State> (*)(nlohmann::json const &,
-                                                            ClientConnection &);
+        using TransitionFunc = std::function<std::pair<Status, State>(nlohmann::json const &,
+                                                                      ClientConnection &)>;
         template<typename PacketType, typename State, std::size_t size>
         using TransitionMapping = std::array<std::map<PacketType, TransitionFunc<State>>, size>;
 
@@ -116,13 +117,18 @@ private:
     // Methods called by the `Conversation`s
 public:
     bool subscribed() const { return _subscribed; }
+    bool playlistExists(std::string const & name) const { return _server.playlistExists(name); }
+
     void addMusic(Music const & music) { _server.addMusic(_playlistName, music); }
     void appendMusic(Music const & music) { _server.appendMusic(music); }
-    void play() { _server.play(); }
+    void newPlaylist(std::string const & name, std::string const & pass) {
+        _server.newPlaylist(name, pass);
+    }
     void pause() { _server.pause(); }
+    void play() { _server.play(); }
+    void selectPlaylist(std::string const & name);
     void subscribe();
     void unsubscribe();
-    void selectPlaylist(std::string const & name);
 };
 
 

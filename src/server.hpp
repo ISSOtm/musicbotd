@@ -51,11 +51,16 @@ private:
     void handleClosingConnection(ConnectionID id); // Destroy a connection object from its ID
 
 public:
-    void play() { _player.play(); }
-    void pause() { _player.pause(); }
+    bool playlistExists(std::string const & name) const { return _manager.playlistExists(name); }
+
     void addMusic(std::string const & playlist, Music const & music) {
         _manager.addMusic(playlist, music);
     }
+    void newPlaylist(std::string const & name, std::string const & pass) {
+        _manager.newPlaylist(name, pass);
+    }
+    void pause() { _player.pause(); }
+    void play() { _player.play(); }
     void appendMusic(Music const & music) { _player.appendMusic(music); }
     void subscribe(std::string const & name) { _manager.subscribe(name); }
     void unsubscribe(std::string const & name) { _manager.unsubscribe(name); }
