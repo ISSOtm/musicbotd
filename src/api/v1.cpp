@@ -10,7 +10,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
             }},
 
             std::pair{ClientPacketType::PL_SEL, [&](nlohmann::json const & packet) {
-                std::string playlist = packet["name"].get<std::string>();
+                std::string playlist = packet.at("name").get<std::string>();
                 if (_owner.playlistExists(playlist)) {
                     _owner.selectPlaylist(playlist);
                     sendSuccess();
@@ -29,7 +29,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
             }},
 
             std::pair{ClientPacketType::PL_SUB, [&](nlohmann::json const & packet) {
-                packet["sub"].get<bool>() ? _owner.subscribe() : _owner.unsubscribe();
+                packet.at("sub").get<bool>() ? _owner.subscribe() : _owner.unsubscribe();
                 sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }},
@@ -55,7 +55,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
             }},
 
             std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet) {
-                packet["stop"].get<bool>() ? _owner.pause() : _owner.play();
+                packet.at("stop").get<bool>() ? _owner.pause() : _owner.play();
                 sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }}
@@ -68,7 +68,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
         std::map<ClientPacketType, TransitionFunc<State>>{ // PL_SEL
             std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet) {
-                _owner.newPlaylist(_playlist, packet["pass"].get<std::string>());
+                _owner.newPlaylist(_playlist, packet.at("pass").get<std::string>());
                 _owner.selectPlaylist(_playlist);
                 sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);

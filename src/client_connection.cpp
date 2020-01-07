@@ -235,7 +235,7 @@ void ClientConnection::handlePacket(nlohmann::json const & packet) try {
             return;
         }
 
-        int id = packet["id"];
+        int id = packet.at("id");
         try {
             if (id < 0) {
                 // One-off message
