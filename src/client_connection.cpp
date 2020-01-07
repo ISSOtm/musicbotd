@@ -315,7 +315,7 @@ void ClientConnection::selectPlaylist(std::string const & name) {
 
 
 ClientConnection::Conversation::Conversation(ClientConnection & owner, int id)
- : _lastActive(std::chrono::steady_clock::now()), _state(0), _owner(owner), _id(id) {}
+ : _owner(owner), _lastActive(std::chrono::steady_clock::now()), _state(0), _id(id) {}
 
 ClientConnection::Conversation::Status ClientConnection::Conversation::handlePacket(nlohmann::json const & packet) {
     Status status = _handlePacket(packet);

@@ -30,10 +30,11 @@ public:
              : std::runtime_error("state " + std::to_string(state) + " got unexpected packet type " + std::to_string(key)) {}
         };
 
+    protected:
+        ClientConnection & _owner;
     private:
         std::chrono::steady_clock::time_point _lastActive;
         unsigned _state; // State internal to the type
-        ClientConnection & _owner;
         int _id;
 
     public:
@@ -49,8 +50,7 @@ public:
 
     protected: // This should be usable by implementors
         template<typename State>
-        using TransitionFunc = std::function<std::pair<Status, State>(nlohmann::json const &,
-                                                                      ClientConnection &)>;
+        using TransitionFunc = std::function<std::pair<Status, State>(nlohmann::json const &)>;
         template<typename PacketType, typename State, std::size_t size>
         using TransitionMapping = std::array<std::map<PacketType, TransitionFunc<State>>, size>;
 
@@ -64,7 +64,7 @@ public:
                 throw StateMachineRejection(_state, static_cast<unsigned>(key));
             }
             Status ret;
-            std::tie(ret, _state) = transitionFunc(packet, _owner);
+            std::tie(ret, _state) = transitionFunc(packet);
             return ret;
         }
         void sendPacket(nlohmann::json & json);

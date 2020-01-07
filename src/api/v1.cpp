@@ -5,15 +5,14 @@
 v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & packet) {
     std::array const handlers{
         std::map<ClientPacketType, TransitionFunc<State>>{ // NONE
-            std::pair{ClientPacketType::PULSE, [&](nlohmann::json const &, ClientConnection &) {
+            std::pair{ClientPacketType::PULSE, [&](nlohmann::json const &) {
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::PL_SEL, [&](nlohmann::json const & packet,
-                                                    ClientConnection & connection) {
+            std::pair{ClientPacketType::PL_SEL, [&](nlohmann::json const & packet) {
                 std::string playlist = packet["name"].get<std::string>();
-                if (connection.playlistExists(playlist)) {
-                    connection.selectPlaylist(playlist);
+                if (_owner.playlistExists(playlist)) {
+                    _owner.selectPlaylist(playlist);
                     return std::pair(Status::FINISHED, State::NONE);
 
                 } else {
@@ -28,15 +27,12 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 }
             }},
 
-            std::pair{ClientPacketType::PL_SUB, [&](nlohmann::json const & packet,
-                                                    ClientConnection & connection) {
-                packet["sub"].get<bool>() ? connection.subscribe()
-                                          : connection.unsubscribe();
+            std::pair{ClientPacketType::PL_SUB, [&](nlohmann::json const & packet) {
+                packet["sub"].get<bool>() ? _owner.subscribe() : _owner.unsubscribe();
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::MUS_ADD, [&](nlohmann::json const & packet,
-                                                     ClientConnection & connection) {
+            std::pair{ClientPacketType::MUS_ADD, [&](nlohmann::json const & packet) {
                 Music music(packet.at("url").get<std::string>());
 
                 // Parse options
@@ -48,16 +44,15 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                     }
                 }
 
-                connection.addMusic(music);
+                _owner.addMusic(music);
 
                 // Do not add to the queue if we're already subscribed (already adding musics)
-                if (!connection.subscribed()) connection.appendMusic(music);
+                if (!_owner.subscribed()) _owner.appendMusic(music);
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
-            std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet,
-                                                   ClientConnection & connection) {
-                packet["stop"].get<bool>() ? connection.pause() : connection.play();
+            std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet) {
+                packet["stop"].get<bool>() ? _owner.pause() : _owner.play();
                 return std::pair(Status::FINISHED, State::NONE);
             }}
         },
@@ -68,10 +63,9 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
 
         std::map<ClientPacketType, TransitionFunc<State>>{ // PL_SEL
-            std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet,
-                                                      ClientConnection & connection) {
-                connection.newPlaylist(_playlist, packet["pass"].get<std::string>());
-                connection.selectPlaylist(_playlist);
+            std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet) {
+                _owner.newPlaylist(_playlist, packet["pass"].get<std::string>());
+                _owner.selectPlaylist(_playlist);
                 return std::pair(Status::FINISHED, State::NONE);
             }}
         },
