@@ -30,6 +30,11 @@ public:
     bool empty() const { return _musics.empty(); }
     bool isSubscribed() const { return  _subscribers && !empty(); }
 
+    void addMusic(ID const & id) {
+        if (std::find(_musics.cbegin(), _musics.cend(), id) == _musics.cend()) {
+            _musics.push_back(id);
+        }
+    }
     ID const & nextMusic() {
         if (empty()) { throw NoMoreMusic(); }
 

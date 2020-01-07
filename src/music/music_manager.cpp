@@ -51,10 +51,11 @@ void MusicManager::addMusic(std::string const & playlist, Music const & music) {
                                                            music);
             } while (!inserted);
         }
-    }
 
-    if (!playlist.empty()) {
-        addMusic("", music);
+        // Now add that Music to the playlist
+        ID id = std::get<0>(*iter);
+        _playlists.at(playlist).addMusic(id);
+        if (!playlist.empty()) _playlists.at("").addMusic(id);
     }
 }
 
