@@ -9,6 +9,12 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
+            std::pair{ClientPacketType::PL_SEL, +[](nlohmann::json const & packet,
+                                                    ClientConnection & connection) {
+                connection.selectPlaylist(packet["name"].get<std::string>());
+                return std::pair(Status::FINISHED, State::NONE);
+            }},
+
             std::pair{ClientPacketType::PL_SUB, +[](nlohmann::json const & packet,
                                                     ClientConnection & connection) {
                 packet["sub"].get<bool>() ? connection.subscribe()

@@ -324,7 +324,6 @@ void ClientConnection::unsubscribe() {
 void ClientConnection::selectPlaylist(std::string const & name) {
     unsubscribe();
     _playlistName = name;
-    subscribe();
 }
 
 
