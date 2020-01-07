@@ -4,6 +4,7 @@
 
 #include <mpv/client.h>
 
+#include <atomic>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -39,7 +40,7 @@ public:
     static double constexpr timeout = 0.1;
 
 private:
-    bool _running;
+    std::atomic_bool _running;
 
     mpv_handle * _mpv;
 

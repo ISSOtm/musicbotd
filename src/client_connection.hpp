@@ -96,9 +96,9 @@ private:
     std::string _playlistName;
     bool _subscribed;
 
-    bool _destructing; // Set to true when the object is being destructed
-    bool _running; // Set to false when the thread stops
-    bool _stopping; // Set to true when the thread should stop (but it may still be running)
+    std::atomic_bool _destructing; // Set to true when the object is being destructed
+    std::atomic_bool _running; // Set to false when the thread stops
+    std::atomic_bool _stopping; // Set to true when the thread should stop (but it may still be running)
     // Must be last, so it gets initialized last
     std::thread _thread; // The thread managing the connection
 

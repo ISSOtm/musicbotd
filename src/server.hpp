@@ -1,6 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include <atomic>
 #include <chrono>
 #include <mutex>
 #include <list>
@@ -26,7 +27,7 @@ public:
 private:
     int _socket; // File descriptor for the listener socket
 
-    bool _running; // Set to false when the server recieves SIGTERM
+    std::atomic_bool _running; // Set to false when the server recieves SIGTERM
 
     std::mutex _closingReqMutex; // Mutex for modifying what's below
     std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
