@@ -50,6 +50,10 @@ void Player::run() {
             case MPV_EVENT_SHUTDOWN:
                 _running = false;
                 break;
+
+            case MPV_EVENT_END_FILE:
+                runCommand("playlist-remove", "0");
+                break;
         }
     }
 
