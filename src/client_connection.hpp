@@ -50,25 +50,29 @@ public:
         Status handlePacket(nlohmann::json const & packet);
 
     protected: // This should be usable by implementors
-        template<typename State>
+        using State = unsigned;
+        using PacketType = unsigned;
         using TransitionFunc = std::function<std::pair<Status, State>(nlohmann::json const &)>;
-        template<typename PacketType, typename State, std::size_t size>
-        using TransitionMapping = std::array<std::map<PacketType, TransitionFunc<State>>, size>;
+        template<std::size_t size>
+        using TransitionMapping = std::array<std::map<PacketType, TransitionFunc>, size>;
 
         // Utility function for children classes to call
-        template<typename PacketType, typename State, std::size_t size>
-        Status processStateMachine(TransitionMapping<PacketType, State, size> const & transitions, PacketType key, nlohmann::json const & packet) {
-            TransitionFunc<State> transitionFunc;
+        template<std::size_t size>
+        Status processStateMachine(TransitionMapping<size> const & transitions, PacketType key,
+                                   nlohmann::json const & packet) {
+            TransitionFunc transitionFunc;
             try {
                 transitionFunc = transitions[_state].at(key);
             } catch (std::out_of_range const &) {
-                throw StateMachineRejection(_state, static_cast<unsigned>(key));
+                throw StateMachineRejection(_state, key);
             }
             Status ret;
             std::tie(ret, _state) = transitionFunc(packet);
             return ret;
         }
+
         void sendPacket(nlohmann::json & json);
+
     private:
         // Each implementation's own packet handling
         virtual Status _handlePacket(nlohmann::json const & packet) = 0;

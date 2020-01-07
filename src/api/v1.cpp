@@ -4,7 +4,7 @@
 
 v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & packet) {
     std::array const handlers{
-        std::map<ClientPacketType, TransitionFunc<State>>{ // NONE
+        std::map<PacketType, TransitionFunc>{ // NONE
             std::pair{ClientPacketType::PULSE, [&](nlohmann::json const &) {
                 return std::pair(Status::FINISHED, State::NONE);
             }},
@@ -18,8 +18,8 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
                 } else {
                     nlohmann::json packet{
-                        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-                        {"code", static_cast<unsigned>(ServerStatuses::NOT_FOUND)},
+                        {"type", ServerPacketType::STATUS},
+                        {"code", ServerStatuses::NOT_FOUND},
                         {"msg", "Please enter a password to create the playlist with"}
                     };
                     sendPacket(packet);
@@ -68,17 +68,17 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
         },
 
 
-        std::map<ClientPacketType, TransitionFunc<State>>{ // AUTH
+        std::map<PacketType, TransitionFunc>{ // AUTH
         },
 
 
-        std::map<ClientPacketType, TransitionFunc<State>>{ // PL_SEL
+        std::map<PacketType, TransitionFunc>{ // PL_SEL
             std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet) {
                 std::string password = packet.at("pass").get<std::string>();
                 if (password.empty()) {
                     nlohmann::json error{
-                        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-                        {"code", static_cast<unsigned>(ServerStatuses::BAD_PASS)},
+                        {"type", ServerPacketType::STATUS},
+                        {"code", ServerStatuses::BAD_PASS},
                         {"msg", "A playlist cannot have an empty password"}
                     };
                     sendPacket(error);
@@ -93,18 +93,17 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
         },
 
 
-        std::map<ClientPacketType, TransitionFunc<State>>{ // PL_DEL
+        std::map<PacketType, TransitionFunc>{ // PL_DEL
         }
     };
 
     try {
-        return processStateMachine(handlers, ClientPacketType(packet.at("type").get<unsigned>()),
-                                   packet);
+        return processStateMachine(handlers, packet.at("type").get<unsigned>(), packet);
 
     } catch (StateMachineRejection const & e) {
         nlohmann::json packet{
-            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-            {"code", static_cast<unsigned>(ServerStatuses::UNEXPECTED)},
+            {"type", ServerPacketType::STATUS},
+            {"code", ServerStatuses::UNEXPECTED},
             {"msg", "Packet could not be handled by the state machine"}
         };
         sendPacket(packet);
@@ -112,8 +111,8 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
     } catch (nlohmann::json::exception const & e) {
         nlohmann::json packet{
-            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-            {"code", static_cast<unsigned>(ServerStatuses::REJECTED)},
+            {"type", ServerPacketType::STATUS},
+            {"code", ServerStatuses::REJECTED},
             {"msg", e.what()} // TODO: process the message better than the default message
         };
         sendPacket(packet);
@@ -121,16 +120,16 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
     } catch (std::exception const & e) {
         nlohmann::json packet{
-            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-            {"code", static_cast<unsigned>(ServerStatuses::ERROR)},
+            {"type", ServerPacketType::STATUS},
+            {"code", ServerStatuses::ERROR},
             {"msg", e.what()}
         };
         sendPacket(packet);
         throw e;
     } catch (...) {
         nlohmann::json packet{
-            {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-            {"code", static_cast<unsigned>(ServerStatuses::ERROR)},
+            {"type", ServerPacketType::STATUS},
+            {"code", ServerStatuses::ERROR},
             {"msg", "Unknown exception occurred within state machine"}
         };
         sendPacket(packet);
@@ -141,16 +140,16 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
 void v1Conversation::sendTimeout() {
     nlohmann::json packet{
-        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-        {"code", static_cast<unsigned>(ServerStatuses::TIMEOUT)}
+        {"type", ServerPacketType::STATUS},
+        {"code", ServerStatuses::TIMEOUT}
     };
     sendPacket(packet);
 }
 
 void v1Conversation::sendSuccess() {
     nlohmann::json packet{
-        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
-        {"code", static_cast<unsigned>(ServerStatuses::OK)}
+        {"type", ServerPacketType::STATUS},
+        {"code", ServerStatuses::OK}
     };
     sendPacket(packet);
 }
