@@ -115,7 +115,9 @@ private:
 
     // Methods called by the `Conversation`s
 public:
-    void addMusic(std::string const & url, std::map<std::string, std::string> const & options);
+    bool subscribed() const { return _subscribed; }
+    void addMusic(Music const & music) { _server.addMusic(_playlistName, music); }
+    void appendMusic(Music const & music) { _server.appendMusic(music); }
     void play() { _server.play(); }
     void pause() { _server.pause(); }
     void subscribe();

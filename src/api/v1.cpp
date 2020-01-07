@@ -24,16 +24,21 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
             std::pair{ClientPacketType::MUS_ADD, +[](nlohmann::json const & packet,
                                                      ClientConnection & connection) {
+                Music music(packet.at("url").get<std::string>());
+
                 // Parse options
                 std::map<std::string, std::string> options;
                 auto iter = packet.find("options");
                 if (iter != packet.end()) { // The `options` object is optional
                     for (auto const & [key, value] : (*iter).items()) {
-                        options.emplace(key, value.get<std::string>());
+                        music.setOption(key, value.get<std::string>());
                     }
                 }
 
-                connection.addMusic(packet.at("url").get<std::string>(), options);
+                connection.addMusic(music);
+
+                // Do not add to the queue if we're already subscribed (already adding musics)
+                if (!connection.subscribed()) connection.appendMusic(music);
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 

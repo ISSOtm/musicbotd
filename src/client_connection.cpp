@@ -296,19 +296,6 @@ void ClientConnection::handleNegotiation(nlohmann::json const & packet) {
     sendPacket(nlohmann::json(_version)); // Sends a 0 in case of failure, notifying the client
 }
 
-void ClientConnection::addMusic(std::string const & url,
-                                std::map<std::string, std::string> const & options) {
-    Music music(url);
-    for (auto const & [key, value] : options) {
-        music.setOption(key, value);
-    }
-
-    _server.addMusic(_playlistName, music);
-
-    // Do not add to the queue if we're already subscribed (and already adding musics)
-    if (!_subscribed) _server.appendMusic(music);
-}
-
 void ClientConnection::subscribe() {
     if(!_subscribed) {
         _server.subscribe(_playlistName);
