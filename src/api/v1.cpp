@@ -74,6 +74,17 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
         std::map<ClientPacketType, TransitionFunc<State>>{ // PL_SEL
             std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet) {
+                std::string password = packet.at("pass").get<std::string>();
+                if (password.empty()) {
+                    nlohmann::json error{
+                        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+                        {"code", static_cast<unsigned>(ServerStatuses::BAD_PASS)},
+                        {"msg", "A playlist cannot have an empty password"}
+                    };
+                    sendPacket(error);
+                    return std::pair(Status::CONTINUING, State::PL_SEL);
+                }
+
                 _owner.newPlaylist(_playlist, packet.at("pass").get<std::string>());
                 _owner.selectPlaylist(_playlist);
                 sendSuccess();
