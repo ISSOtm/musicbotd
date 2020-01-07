@@ -59,6 +59,8 @@ public:
     v1Conversation(ClientConnection & owner, int id) : Conversation(owner, id) {}
 
     Status _handlePacket(nlohmann::json const & packet) override;
+private:
+    void sendSuccess();
 };
 
 

@@ -13,6 +13,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 std::string playlist = packet["name"].get<std::string>();
                 if (_owner.playlistExists(playlist)) {
                     _owner.selectPlaylist(playlist);
+                    sendSuccess();
                     return std::pair(Status::FINISHED, State::NONE);
 
                 } else {
@@ -29,6 +30,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
 
             std::pair{ClientPacketType::PL_SUB, [&](nlohmann::json const & packet) {
                 packet["sub"].get<bool>() ? _owner.subscribe() : _owner.unsubscribe();
+                sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
@@ -45,14 +47,16 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
                 }
 
                 _owner.addMusic(music);
-
                 // Do not add to the queue if we're already subscribed (already adding musics)
                 if (!_owner.subscribed()) _owner.appendMusic(music);
+
+                sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }},
 
             std::pair{ClientPacketType::PAUSE, [&](nlohmann::json const & packet) {
                 packet["stop"].get<bool>() ? _owner.pause() : _owner.play();
+                sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }}
         },
@@ -66,6 +70,7 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
             std::pair{ClientPacketType::PASSWORD, [&](nlohmann::json const & packet) {
                 _owner.newPlaylist(_playlist, packet["pass"].get<std::string>());
                 _owner.selectPlaylist(_playlist);
+                sendSuccess();
                 return std::pair(Status::FINISHED, State::NONE);
             }}
         },
@@ -97,4 +102,12 @@ v1Conversation::Status v1Conversation::_handlePacket(nlohmann::json const & pack
         sendPacket(packet);
         throw e;
     }
+}
+
+void v1Conversation::sendSuccess() {
+    nlohmann::json packet{
+        {"type", static_cast<unsigned>(ServerPacketType::STATUS)},
+        {"code", static_cast<unsigned>(ServerStatuses::OK)}
+    };
+    sendPacket(packet);
 }
