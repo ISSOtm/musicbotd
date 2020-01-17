@@ -14,12 +14,11 @@
 class MusicManager {
 public:
     using ID = uint32_t;
-    using Playlist = Playlist<ID>;
 
 private:
     std::map<ID, Music> _musics;
 
-    std::map<std::string, Playlist> _playlists;
+    std::map<std::string, Playlist<ID>> _playlists;
     decltype(_playlists)::const_iterator const _global_list;
     decltype(_playlists)::iterator _next; // Next candidate for music addition
 
