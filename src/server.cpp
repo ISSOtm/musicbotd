@@ -201,9 +201,11 @@ void Server::run() {
             if (std::chrono::steady_clock::now() - lastHeartbeat > 0.7s) {
                 lastHeartbeat = std::chrono::steady_clock::now();
 
-                nlohmann::json status = _player.status();
-                for (auto & connection : _connections) {
-                    connection.heartbeat(status);
+                if (!_connections.empty()) {
+                    nlohmann::json status = _player.status();
+                    for (auto & connection : _connections) {
+                        connection.heartbeat(status);
+                    }
                 }
             }
         }
