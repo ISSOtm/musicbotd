@@ -34,6 +34,7 @@ public:
 
     bool playlistExists(std::string const & name) const;
 
+    Music getMusic(ID const & music) const;
     void addMusic(std::string const & name, Music const & music);
     void newPlaylist(std::string const & name, std::string const & pass);
     void subscribe(std::string const & name);

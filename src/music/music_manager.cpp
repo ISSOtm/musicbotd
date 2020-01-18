@@ -15,27 +15,36 @@ MusicManager::MusicManager()
 
 Music const & MusicManager::nextMusic() {
     spdlog::get("logger")->trace("Trying to add new music...");
-    std::lock_guard lock(_mutex);
 
-    // First, find a playlist that's ready to add from
-    bool looped = false;
-    do {
-        ++_next;
-        if (_next == _playlists.end()) {
-            if (looped) { throw NoMoreMusic(); } // Give up if we already looped
-            // This cannot be the end because there is always at least the global playlist
-            _next = _playlists.begin();
-            looped = true;
-        }
-    } while (!std::get<1>(*_next).isSubscribed());
+    {
+        std::lock_guard lock(_mutex);
 
-    return _musics.at(std::get<1>(*_next).nextMusic());
+        // First, find a playlist that's ready to add from
+        bool looped = false;
+        do {
+            ++_next;
+            if (_next == _playlists.end()) {
+                if (looped) { throw NoMoreMusic(); } // Give up if we already looped
+                // This cannot be the end because there is always at least the global playlist
+                _next = _playlists.begin();
+                looped = true;
+            }
+        } while (!std::get<1>(*_next).isSubscribed());
+    }
+
+    return getMusic(std::get<1>(*_next).nextMusic());
 }
 
 
 bool MusicManager::playlistExists(std::string const & name) const {
     std::lock_guard lock(_mutex);
     return _playlists.find(name) != _playlists.cend();
+}
+
+// Make sure to return a copy and not a ref because the Music might be deleted
+Music MusicManager::getMusic(ID const & id) const {
+    std::lock_guard lock(_mutex);
+    return _musics.at(id);
 }
 
 void MusicManager::addMusic(std::string const & playlist, Music const & music) {
