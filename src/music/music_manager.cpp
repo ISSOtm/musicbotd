@@ -22,7 +22,7 @@ Music const & MusicManager::nextMusic() {
     do {
         ++_next;
         if (_next == _playlists.end()) {
-            if (looped) { throw Playlist<ID>::NoMoreMusic(); } // Give up if we already looped
+            if (looped) { throw NoMoreMusic(); } // Give up if we already looped
             // This cannot be the end because there is always at least the global playlist
             _next = _playlists.begin();
             looped = true;

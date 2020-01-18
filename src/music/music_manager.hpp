@@ -14,6 +14,7 @@
 class MusicManager {
 public:
     using ID = uint32_t;
+    using NoMoreMusic = Playlist<ID>::NoMoreMusic;
 
 private:
     std::map<ID, Music> _musics;
