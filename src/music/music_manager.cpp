@@ -20,6 +20,7 @@ Music const & MusicManager::nextMusic() {
     // First, find a playlist that's ready to add from
     bool looped = false;
     do {
+        ++_next;
         if (_next == _playlists.end()) {
             if (looped) { throw Playlist<ID>::NoMoreMusic(); } // Give up if we already looped
             // This cannot be the end because there is always at least the global playlist
