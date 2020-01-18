@@ -30,7 +30,7 @@ private:
 public:
     MusicManager();
 
-    Music const & nextMusic();
+    Music nextMusic();
 
     bool playlistExists(std::string const & name) const;
 

@@ -13,7 +13,7 @@ MusicManager::MusicManager()
     // TODO: read music list and playlists
 }
 
-Music const & MusicManager::nextMusic() {
+Music MusicManager::nextMusic() {
     spdlog::get("logger")->trace("Trying to add new music...");
 
     {
