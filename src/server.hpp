@@ -29,15 +29,15 @@ private:
 
     std::atomic_bool _running; // Set to false when the server recieves SIGTERM
 
-    std::mutex _closingReqMutex; // Mutex for modifying what's below
-    std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
-    ConnectionID _nextConnectionID; // The ID of the next connection to be generated
-    std::list<ClientConnection> _connections;
-
     MusicManager _manager;
 
     Player _player;
     std::thread _playerThread;
+
+    std::mutex _closingReqMutex; // Mutex for modifying what's below
+    std::queue<ConnectionID> _closingRequests; // The IDs of the connections wishing to die
+    ConnectionID _nextConnectionID; // The ID of the next connection to be generated
+    std::list<ClientConnection> _connections;
 
     void tryConnectSocket(std::string const & port, struct addrinfo const * hints,
                           char const * protocol);

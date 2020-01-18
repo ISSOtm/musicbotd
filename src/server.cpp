@@ -71,8 +71,8 @@ void Server::tryConnectSocket(std::string const & port, struct addrinfo const * 
 }
 
 Server::Server(ConfigManager & config)
- : _socket(-1), _running(true), _nextConnectionID(0), _player(),
-   _playerThread([&](){_player.run();}) {
+ : _socket(-1), _running(true), _player(), _playerThread([&](){_player.run();}),
+   _nextConnectionID(0) {
     if (serverInstance) {
         // Running two server instances in the same process doesn't sound reasonable, so nothing
         // is designed to handle it.
