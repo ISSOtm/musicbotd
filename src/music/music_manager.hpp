@@ -38,7 +38,7 @@ public:
     void addMusic(std::string const & name, Music const & music);
     void newPlaylist(std::string const & name, std::string const & pass);
     void subscribe(std::string const & name);
-    void unsubscribe(std::string const & name);
+    bool unsubscribe(std::string const & name);
 };
 
 

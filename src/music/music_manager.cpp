@@ -78,14 +78,17 @@ void MusicManager::newPlaylist(std::string const & name, std::string const & pas
     _playlists.emplace(std::piecewise_construct, std::tuple(name), std::tuple(password));
 }
 
-void MusicManager::subscribe(std::string const & playlist) {
-    spdlog::get("logger")->trace("Subscribed to playlist \"{}\"", playlist);
+void MusicManager::subscribe(std::string const & name) {
+    spdlog::get("logger")->trace("Subscribed to playlist \"{}\"", name);
     std::lock_guard lock(_mutex);
-    _playlists.at(playlist).subscribe();
+    _playlists.at(name).subscribe();
 }
 
-void MusicManager::unsubscribe(std::string const & playlist) {
-    spdlog::get("logger")->trace("Unsubscribed from playlist \"{}\"", playlist);
+bool MusicManager::unsubscribe(std::string const & name) {
+    spdlog::get("logger")->trace("Unsubscribed from playlist \"{}\"", name);
     std::lock_guard lock(_mutex);
-    _playlists.at(playlist).unsubscribe();
+    Playlist<ID> & playlist = _playlists.at(name);
+    bool wasSubbed = playlist.isSubscribed();
+    playlist.unsubscribe();
+    return !playlist.isSubscribed() && wasSubbed;
 }
