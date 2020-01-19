@@ -29,6 +29,7 @@ private:
 
     std::atomic_bool _running; // Set to false when the server recieves SIGTERM
 
+    std::atomic_bool _tryAddMusic; // Set to false when failing to add music
     MusicManager _manager;
 
     Player _player;
@@ -57,6 +58,7 @@ public:
 
     void addMusic(std::string const & playlist, Music const & music) {
         _manager.addMusic(playlist, music);
+        _tryAddMusic = true;
     }
     void appendMusic(Music const & music) { _player.appendMusic(music); }
     void newPlaylist(std::string const & name, std::string const & pass) {
@@ -65,7 +67,7 @@ public:
     void pause() { _player.pause(); }
     void play() { _player.play(); }
     void seek(double seconds) { _player.seek(seconds); }
-    void subscribe(std::string const & name) { _manager.subscribe(name); }
+    void subscribe(std::string const & name) { _manager.subscribe(name); _tryAddMusic = true; }
     void unsubscribe(std::string const & name) { _manager.unsubscribe(name); }
 };
 

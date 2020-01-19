@@ -89,6 +89,13 @@ void Player::seek(double seconds) {
 }
 
 
+unsigned Player::playlistSize() const {
+    mpv_node playlist = getProperty<mpv_node>("playlist");
+    unsigned len = playlist.u.list->num;
+    mpv_free_node_contents(&playlist);
+    return len;
+}
+
 nlohmann::json Player::status() const {
     nlohmann::json packet{
         {"duration", getProperty<double>("duration")},

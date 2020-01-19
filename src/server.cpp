@@ -71,8 +71,8 @@ void Server::tryConnectSocket(std::string const & port, struct addrinfo const * 
 }
 
 Server::Server(ConfigManager & config)
- : _socket(-1), _running(true), _player(), _playerThread([&](){_player.run();}),
-   _nextConnectionID(0) {
+ : _socket(-1), _running(true), _tryAddMusic(true), _player(),
+   _playerThread([&](){_player.run();}), _nextConnectionID(0) {
     if (serverInstance) {
         // Running two server instances in the same process doesn't sound reasonable, so nothing
         // is designed to handle it.
@@ -207,6 +207,18 @@ void Server::run() {
                         connection.heartbeat(status);
                     }
                 }
+            }
+        }
+
+        // Try refilling the playlist
+        if (_tryAddMusic && _player.playlistSize() < 3) {
+            try {
+                // Only act if there is at least one playlist
+                Music music = _manager.nextMusic();
+                appendMusic(music);
+            } catch (decltype(_manager)::NoMoreMusic const &) {
+                // If adding music failed, don't try again until there's a chance
+                _tryAddMusic = false;
             }
         }
     }

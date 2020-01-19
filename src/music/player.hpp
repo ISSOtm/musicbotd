@@ -90,6 +90,7 @@ public:
     void play();
     void seek(double seconds);
 
+    unsigned playlistSize() const;
     nlohmann::json status() const;
 };
 
